@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  [Sign Up]
+{% endblock %}
+
+{% block stylesheet %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sign.css') }}">
+{% endblock %}
+
+{% block header %}
+  <h1>Sign Up</h1>
+{% endblock %}
+
+{% block main %}
+  <div>
+    <form class="form">
+      <div class="input-user">
+        <input type="text" name="" id="user-id" class="form-control" placeholder="Input ID" />
+        <p id="id-msg">아이디 메세지</p>
+      </div>
+      <div>
+      </div>
+      <div class="input-user">
+        <input type="password" name="" id="user-pw" class="form-control" placeholder="Input PW" />
+        <input type="password" name="" id="user-confirm-pw" class="form-control" placeholder="Input Confirm PW" />
+        <p id="pw-msg">비밀번호 메세지</p>
+      </div>
+      <div class="input-user">
+        <input type="email" name="" id="user-email" class="form-control" placeholder="Input Email" />
+        <p id="email-msg">이메일 메세지</p>
+      </div>
+      <div class="contianer">
+        <input type="submit" id="submit-btn" class="btn btn-primary" value="Sign UP" />
+      </div>
+    </form>
+  </div>
+
+
+  <script>
+    $(function(){
+      document.getElementsByClassName('form')[0].onsubmit = (e) => {
+        e.preventDefault();
+        const user_id = document.getElementById('user-id').value;
+        const user_pw = document.getElementById('user-pw').value;
+        const user_confirm_pw = document.getElementById('user-confirm-pw').value;
+        const user_email = document.getElementById('user-email').value;
+
+        if(user_id === ''){
+          document.getElementById('id-msg').style.display = 'block';
+          document.getElementById('id-msg').innerHTML = '아이디를 입력하지 않았습니다. 아이디를 입력해주세요.'
+          document.getElementById('id-msg').style.color = red;
+          return false;
+        }else{
+          document.getElementById('id-msg').style.display = 'none';
+        }
+
+        if(user_pw === '' || user_confirm_pw === ''){
+          document.getElementById('pw-msg').style.display = 'block';
+          document.getElementById('pw-msg').innerHTML = '비밀번호 또는 비밀번호 확인란에 입력을 해주세요.';
+          document.getElementById('pw-msg').style.color = 'red';
+          return false;
+        }else{
+          document.getElementById('pw-msg').style.display = 'none';
+        }        
+
+        if(user_pw !== user_confirm_pw){
+          document.getElementById('pw-msg').style.display = 'block';
+          document.getElementById('pw-msg').innerHTML = '비밀번호 또는 비밀번호 확인란이 동일하지 않습니다. 입력을 해주세요.';
+          document.getElementById('pw-msg').style.color = 'red';
+          return false;
+        }
+
+        if(user_email === '' || !(user_email.includes('@') && user_email.includes('.'))){
+          document.getElementById('email-msg').style.display = 'block';
+          document.getElementById('email-msg').innerHTML = '이메일이 입력되어 있지 않거나 양식에 맞지 않습니다. 이메일을 제대로 입력해주세요.';
+          document.getElementById('email-msg').style.color = 'red';
+          return false;
+        }else{
+          document.getElementById('email-msg').style.display = 'none';
+        }
+
+        $.ajax({
+          type : "post",
+          url : "/sign_up",
+          async : false,
+          data : {
+            "user_id" : user_id,
+            "user_pw" : user_pw,
+            "user_email" : user_email
+          },
+          success : (response) => {
+            if(response.confirm){
+                // 메일 전송 안내 페이지로 리다이렉트
+                alert('redirect send mail!');
+                location.replace('/sign_in');
+            }else{
+                if(response.target === 'id'){
+                    document.getElementById('id-msg').style.display = 'block';
+                    document.getElementById('id-msg').innerHTML = response.msg;
+                    document.getElementById('id-msg').style.color = 'red';
+                    document.getElementById('pw-msg').style.display = 'none';
+                    document.getElementById('email-msg').style.display = 'none';
+                }else{
+                    document.getElementById('id-msg').style.display = 'none';
+                    document.getElementById('pw-msg').style.display = 'none';
+                    document.getElementById('email-msg').style.display = 'block';
+                    document.getElementById('pw-msg').innerHTML = response.msg;
+                    document.getElementById('pw-msg').style.color = 'red';
+                }
+            }
+          }
+        });
+
+        //   alert(user_email.includes('@') && user_email.includes('.'));
+      }
+    });
+  </script>
+{% endblock %}

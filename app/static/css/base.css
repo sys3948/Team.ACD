@@ -1,0 +1,10 @@
+.header-contents, .main-contents{
+    width: 978px;
+    max-width: 978px;
+}
+
+#submit-btn {
+    margin: 5% 45%;
+    width: 100px;
+    height: 40px;
+}
