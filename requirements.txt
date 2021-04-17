@@ -1,0 +1,15 @@
+blinker==1.4
+click==7.1.2
+cx-Oracle==8.1.0
+Flask==1.1.2
+Flask-Mail==0.9.1
+itsdangerous==1.1.0
+Jinja2==2.11.3
+mariadb==1.0.6
+MarkupSafe==1.1.1
+mysql-connector-python==8.0.23
+protobuf==3.15.8
+pymongo==3.11.3
+PyMySQL==1.0.2
+six==1.15.0
+Werkzeug==1.0.1
