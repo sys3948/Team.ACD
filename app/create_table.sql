@@ -24,12 +24,6 @@ create table dbms_info(
 );
 
 insert into dbms (user_pk,dbms_pk) SELECT '삽입할 사용자번호 값', LPAD(COUNT(*)+1,3,'0') FROM dbms WHERE u_pk='사용자번호 int형';
-025
-
-023
-
-025
-
 
 create table delete_user(
   id int auto_increment primary key,
