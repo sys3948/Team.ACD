@@ -1,0 +1,23 @@
+.box-300{
+    width:300px;
+    margin:0 auto;
+    
+}
+
+.tab-box{
+    display: flex; 
+    justify-content: space-between;
+    margin:50px 0;
+}
+
+.tab-active{
+    text-decoration: underline;
+}
+.tab-item{
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.mt-50{
+    margin-top: 50px;
+}

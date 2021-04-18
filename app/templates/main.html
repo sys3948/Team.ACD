@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+
+
+{% block main %}
+<div class="dropdown text-right" style="margin-right: 20%; margin-top: 10px;"> 
+    <button class="btn btn-primary dropdown-toggle" href="#" data-toggle="dropdown">menu</button>
+    <div class="dropdown-menu"> 
+      {% if session.id %}
+        <a class="dropdown-item" href="{{ url_for('auth.sign_out') }}">로그아웃</a> 
+        <a class="dropdown-item open" href="#">Reset Password</a> 
+      {% else %}
+        <a class="dropdown-item" href="{{ url_for('auth.sign_in') }}">로그인</a> 
+      {% endif %}
+
+    </div> 
+  </div>
+<p>dbide main 입니다.</p>
+
+{% include 'include/confirm_pw.html'%}
+
+<script>
+    $(".open").click(function(e){
+        e.preventDefault();
+        $('#confirm-pw').modal();
+    });
+        
+        
+    
+</script>
+{% endblock %}

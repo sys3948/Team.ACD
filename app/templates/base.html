@@ -20,11 +20,10 @@
   </head>
   <body>
     <header>
-      <div class="header-contents container mt-3 p-3">
-        {% block header %}
-        {% endblock %}
-      </div>
-    </header>
+      
+      {% block header %}
+      {% endblock %}
+      </header>
     <main>
       <div class="main-contents container">
         {% block main %}
@@ -33,3 +32,9 @@
     </main>
   </body>
 </html>
+
+{% if get_flashed_messages() %}
+  {% for message in get_flashed_messages() %}
+     <script>alert("{{ message }}");</script>
+  {% endfor %}
+{% endif %}

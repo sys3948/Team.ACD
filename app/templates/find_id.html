@@ -1,0 +1,23 @@
+{% extends 'base.html'%}
+
+{% block title %}
+  [ Find Id ]
+{% endblock %}
+
+{% block main %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/find.css') }}">
+<div class="box-300">
+    <div class="tab-box">
+        <div class="tab-item tab-active" onclick="location.href='{{ url_for('auth.find_id') }}'">아이디 찾기</div>
+        <div class="tab-item" onclick="location.href='{{ url_for('auth.find_pw') }}'">비밀번호 찾기</div>
+    </div>
+    <h3 class="text-center">Find Id</h3>
+    <form method="POST">
+        <input type="email" placeholder="email" class="form-control mt-50"  name="email" required>
+        <div class="text-center mt-50">
+            <input type="submit" class="btn btn-primary" value="아이디 찾기">
+        </div>
+    </form>        
+
+</div>
+{% endblock %}

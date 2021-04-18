@@ -32,3 +32,6 @@ create table delete_user(
 );
 
 create index users on  user(user_id, email);
+
+ DROP TRIGGER IF EXISTS delete_user_trg;
+ 
