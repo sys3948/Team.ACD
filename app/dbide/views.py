@@ -9,4 +9,4 @@ from . import dbide
 def main():
     # function_name은 개발자가 지정하기.
     print(session)
-    return 'dbide main 입니다.'
+    return render_template('main.html')

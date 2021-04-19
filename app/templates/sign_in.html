@@ -15,7 +15,7 @@
 
 {% block main %}
   <div>
-    <form>
+    <form method="POST">
       <div class="input-group input-user">
         <div class="input-group-prepend">
           <span class="input-group-text">Icon</span>
@@ -34,7 +34,7 @@
     </form>
     <div class="d-flex justify-content-between container">
         <a href="{{ url_for('auth.sign_up') }}">회원가입(Sign UP)</a>
-        <a href="#">ID/PW 찾기</a>
+        <a href="{{ url_for('auth.find_id') }}">ID/PW 찾기</a>
     </div>
   </div>
 {% endblock %}
