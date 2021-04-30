@@ -6,7 +6,7 @@ class MysqlDatabase():
         self.conn = mysql.connect(host = current_app.config.get('DB_HOST'), 
                                   user=current_app.config.get('MYSQL_USER'), 
                                   passwd=current_app.config.get('MYSQL_PW'), 
-                                  database='CAD')
+                                  database='ACD')
         self.cur = self.conn.cursor()
     
     def excute(self, sql, args):

@@ -13,13 +13,12 @@
         <a class="dropdown-item" href="{{ url_for('auth.sign_in') }}">로그인</a> 
       {% endif %}
 
-    </div> 
-  </div>
-<p>dbide main 입니다.</p>
+  </div> 
+</div>
 
-{% include 'include/confirm_pw.html'%}
+{# include 'include/confirm_pw.html'#}
 
-<script>
+<!-- <script>
     $(".open").click(function(e){
         e.preventDefault();
         $('#confirm-pw').modal();
@@ -27,5 +26,15 @@
         
         
     
-</script>
+</script> -->
+
+
+{% if session.confirmed %}
+  <p>인증되었습니다.</p>
+{% else %}
+  <h2>인증되지 않는 계정입니다.</h2>
+  <h2>인증하기 위한 절차 메일을 {{email}}로 전송했으니 확인하여 인증절차를 진행해 주세요.</h2>
+  <h3>만약 인증 메일이 전송되지 않거나 오류가 발생했다면 아래를 클릭해주세요.</h3>
+  <a href="{{ url_for('auth.re_send_email') }}">인증 메일 재전송.</a>
+{% endif %}
 {% endblock %}

@@ -7,7 +7,7 @@ def login_check(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            if not 'id' in session:
+            if not 'id' in session and not 'confirmed' in session:
                 return redirect(url_for('auth.sign_in'))
 
             return func(*args, **kwargs)

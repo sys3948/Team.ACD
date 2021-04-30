@@ -10,29 +10,30 @@
 {% endblock %}
 
 {% block header %}
-  <h1>Sign Up</h1>
+  {% include 'include/_header.html' %}
 {% endblock %}
 
 {% block main %}
-  <div>
+  <div class="box-300">
+    <h1 class="text-center mt-3 mb-3">Sign Up</h1>
     <form class="form">
       <div class="input-user">
         <input type="text" name="" id="user-id" class="form-control" placeholder="Input ID" />
-        <p id="id-msg">아이디 메세지</p>
+        <p id="id-msg"></p>
       </div>
       <div>
       </div>
       <div class="input-user">
         <input type="password" name="" id="user-pw" class="form-control" placeholder="Input PW" />
         <input type="password" name="" id="user-confirm-pw" class="form-control" placeholder="Input Confirm PW" />
-        <p id="pw-msg">비밀번호 메세지</p>
+        <p id="pw-msg"></p>
       </div>
       <div class="input-user">
         <input type="email" name="" id="user-email" class="form-control" placeholder="Input Email" />
-        <p id="email-msg">이메일 메세지</p>
+        <p id="email-msg"></p>
       </div>
-      <div class="contianer">
-        <input type="submit" id="submit-btn" class="btn btn-primary" value="Sign UP" />
+      <div class="contianer text-center">
+        <input type="submit" class="btn btn-primary" value="Sign UP" />
       </div>
     </form>
   </div>
@@ -93,7 +94,6 @@
           success : (response) => {
             if(response.confirm){
                 // 메일 전송 안내 페이지로 리다이렉트
-                alert('redirect send mail!');
                 location.replace('/sign_in');
             }else{
                 if(response.target === 'id'){
@@ -106,8 +106,8 @@
                     document.getElementById('id-msg').style.display = 'none';
                     document.getElementById('pw-msg').style.display = 'none';
                     document.getElementById('email-msg').style.display = 'block';
-                    document.getElementById('pw-msg').innerHTML = response.msg;
-                    document.getElementById('pw-msg').style.color = 'red';
+                    document.getElementById('email-msg').innerHTML = response.msg;
+                    document.getElementById('email-msg').style.color = 'red';
                 }
             }
           }

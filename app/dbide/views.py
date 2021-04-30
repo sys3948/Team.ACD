@@ -4,9 +4,17 @@
 #from flask import ...
 from flask import current_app, render_template, request, session, url_for, redirect, jsonify
 from . import dbide
+from ..database import MysqlDatabase
+from ..decorate import login_check
 
+@dbide.route('/')
 @dbide.route('/main')
+@login_check
 def main():
-    # function_name은 개발자가 지정하기.
-    print(session)
-    return render_template('main.html')
+    if session.get('confirmed') == 0:
+        cur = MysqlDatabase()
+        email = cur.excuteOne('select email from user where id=%s', (session.get('id'),))[0]
+        cur.close()
+    else:
+        email = None
+    return render_template('main.html', email = email)

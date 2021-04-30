@@ -21,18 +21,24 @@ def sign_in():
         user_conn = mysql.connect(host = current_app.config.get('DB_HOST'), 
                                   user=current_app.config.get('MYSQL_USER'), 
                                   passwd=current_app.config.get('MYSQL_PW'), 
-                                  database='CAD')
+                                  database='ACD')
         user_cur = user_conn.cursor()
 
-        user_cur.execute('select id, password_hash, confirmed from user where user_id = %s', (request.form.get('user_id'),))
+        user_cur.execute('select id, user_id, password_hash, confirmed from user where user_id = %s', (request.form.get('user_id'),))
         user_data = user_cur.fetchone()
-        
-        if check_password_hash(user_data[1], request.form.get('user_pw')):
-            session['id'] = user_data[0]
-            session['confirmed'] = user_data[2]
-            return redirect(url_for('dbide.main'))
+        user_cur.close()
+        user_conn.close()
+
+        if not user_data:
+            flash('옳바르지 않는 계정 또는 비밀번호입니다.')
+        else:
+            print("test")
+            if check_password_hash(user_data[2], request.form.get('user_pw')):
+                print("test")
+                session['id'] = user_data[0]
+                session['confirmed'] = user_data[3]
+                return redirect(url_for('dbide.main'))
     return render_template('sign_in.html')
-    # function_name은 개발자가 지정하기.
     
 
 @auth.route('/sign_up', methods=['GET', 'POST'])
@@ -41,7 +47,7 @@ def sign_up():
         user_conn = mysql.connect(host = current_app.config.get('DB_HOST'), 
                                   user=current_app.config.get('MYSQL_USER'), 
                                   passwd=current_app.config.get('MYSQL_PW'), 
-                                  database='CAD')
+                                  database='ACD')
         user_cur = user_conn.cursor()
         user_cur.execute('select user_id from user where user_id = %s', (request.form.get('user_id'),))
 
@@ -61,11 +67,28 @@ def sign_up():
                           )\
                         )
 
+        # user_cur.execute('create database %s' %(request.form.get('user_id')))
+        # user_cur.execute('create user %s@"%" identified by %s', (request.form.get('user_id'), request.form.get('user_pw')))
+        # user_cur.execute('grant all on %s.* to %s@%', (request.form.get('user_id'), request.form.get('user_id')))
+
         user_conn.commit()
         user_cur.execute('select id from user where user_id = %s',(request.form.get('user_id'),))
         token_id = user_cur.fetchone()
         user_cur.close()
         user_conn.close()
+
+        # oracle_conn = oracle.connect(current_app.config.get('ORACLE_USER'), \
+        #                              current_app.config.get('ORACLE_PW'), \
+        #                              '192.168.111.133:1521')
+        # oracle_cur = oracle_conn.cursor()
+        # oracle_cur.execute('create user %s identified by %s', (request.form.get('user_id'), request.form.get('user_pw')))
+        # oracle_cur.execute('grant create session, create table, create view, create sequence to %s', (request.form.get('user_id'),))
+        # oracle_cur.execute('create tablespace %s datafile "/home/sys3948/oracle/%s.dbf size 10m"', (request.form.get('user_id'), request.form.get('user_id')))
+        # oracle_cur.execute('alter user %s quota 10m on %s', (request.form.get('user_id'), request.form.get('user_id')))
+
+        # oracle_conn.commit()
+        # oracle_cur.close()
+        # oracle_conn.close()
 
         s = Serializer(current_app.config.get('SECRET_KEY'), 3600)
         token = s.dumps({'confirm':token_id[0]})
@@ -76,6 +99,7 @@ def sign_up():
                    user = request.form.get('user_id'), \
                    token = token)
         
+        flash('회원 가입 성공했습니다. 회원 인증 절차에 관한 것은 등록하신 메일 : '+request.form.get('user_email')+ ' 로 전송했습니다. 메일에서 확인해주세요.')
         return jsonify({'confirm':True, 'target':'', 'msg':''})
 
     return render_template('sign_up.html')
@@ -88,12 +112,13 @@ def confirm(token):
     try:
         data = s.loads(token)
     except:
-        return False
+        flash('인증 토근 오류가 발생했습니다.')
+        return redirect(url_for('.sign_in'))
 
     user_conn = mysql.connect(host = current_app.config.get('DB_HOST'), 
                                   user=current_app.config.get('MYSQL_USER'), 
                                   passwd=current_app.config.get('MYSQL_PW'), 
-                                  database='CAD')
+                                  database='ACD')
     user_cur = user_conn.cursor()
 
     user_cur.execute('select id from user where id = %s',(data.get('confirm'),))
@@ -108,6 +133,24 @@ def confirm(token):
         session['confirmed'] = '1'
 
     return redirect(url_for('dbide.main'))
+
+
+@auth.route('/re_send_email')
+def re_send_email():
+    cur = MysqlDatabase()
+    email = cur.excuteOne('select email from user where id=%s', (session.get('id'),))
+
+    s = Serializer(current_app.config.get('SECRET_KEY'), 3600)
+    token = s.dumps({'confirm':session.get('id')})
+
+    send_email(to = email[0], \
+               title = '저희 Team A C D의 DB IDE Web App의 회원 가입을 해준 것에 감사합니다.', \
+               templates = 'email/confirm', \
+               user = request.form.get('user_id'), \
+               token = token)
+
+    return redirect(url_for('dbide.main'))
+
 
 
 @auth.route('/sign_out')
@@ -137,11 +180,11 @@ def find_id():
                     title = 'Team A C D 아이디 찾기', \
                     templates = 'email/find_id_msg', \
                     user_id = row[0])
-            flash("이메일이 발송되었습니다.")        
+            flash("이메일  '" + request.form.get('email') + "'에 발송되었습니다.")        
             return redirect(url_for('auth.sign_in'))
                     
         else:
-            return "<script> alert('이메일이 존재하지 않습니다.'); history.back();</script>"
+            flash("'" + request.form.get('email') + "'은 존재하지 않는 이메일입니다.")
                 
 
     return render_template('find_id.html')
@@ -166,11 +209,10 @@ def find_pw():
                    title = 'Team ACD 비밀번호 찾기', \
                    templates = 'email/find_pw_msg', \
                    token = token)
-            flash('이메일이 발송되었습니다.')
+            flash("이메일  '" + request.form.get('email') + "'에 발송되었습니다.")
             return redirect(url_for('auth.sign_in'))
         else:
-            return "<script>alert('가입한 정보와 일치하지 않습니다.'); history.back();</script>"
-                   
+            flash("'" + request.form.get('id') + "' 또는 '" + request.form.get('email') + "'가 등록되어 있지 않습니다.")                   
         
     return render_template('find_pw.html')
 
