@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <!-- Popper JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <!-- Latest compiled JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!--부트스트랩 active 덮어쓰기-->
+    <style>
+        .nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link.active {
+            color: black;
+            background-color: #E9E9E9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% if get_flashed_messages() %}
+            {% for message in get_flashed_messages() %}
+                <div class="alert alert-info">
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    {{message}}
+                </div>
+            {% endfor %}
+        {% endif %}
+        <header class="bg-dark d-flex justify-content-between" style="height: 100px;">
+            <div class="d-flex align-items-center">
+                <p class="font-weight-bold text-white ml-5">UserID: {{session.user_id}}</p>
+            </div>
+            <div class="d-flex align-items-center">
+                <button class="btn btn-primary mr-5">Query</button>
+                <a class="font-weight-bold text-white mr-5" href="{{url_for('auth.sign_out')}}">Log Out</a>
+            </div>
+        </header>
+        <main>
+            {% block content %}
+
+            {% endblock %}
+        </main>
+    </div>
+</body>
+</html>

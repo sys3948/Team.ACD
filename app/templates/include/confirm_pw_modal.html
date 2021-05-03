@@ -1,0 +1,54 @@
+<div class="modal fade" id="confirm-pw" role="dialog">
+    <div class="modal-dialog">
+    
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+            <h4 class="modal-title">비밀번호</h4>
+            <button type="button" class="close close-modal" data-dismiss="modal">×</button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <input type="password" class="form-control" name="pw">
+                    <p class="text-danger font-weight-bold" id="pw-msg"></p>
+                    <div class="text-right">
+                        <button type="button" id="submit" class="btn btn-default">확인</button>
+                        <button type="button" class="btn btn-default close-modal"  data-dismiss="modal">닫기</button>
+                    </div>
+                    
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 모달 close 될때 input 값과 msg  초기화
+    $(".close-modal").click(function(){
+        $("input[name=pw]").val("");
+        $("#pw-msg").text("");
+    });
+
+    $("#submit").click(function(){
+        $.ajax({
+          type : "post",
+          url : "{{ url_for('auth.confirm_pw') }}",
+          data: $("form").serialize(),
+          success : (response) => {
+                
+                if(response.token){
+                    console.log(response.token);
+                    location.href="/change_pw/"+response.token;
+
+                }else{
+                    $("#pw-msg").text(response.msg);
+                    $("#pw-msg").css("display","block");
+                    setTimeout(function(){
+                        $("#pw-msg").hide(200);
+                    },3000);
+                    
+                }
+          }
+        });
+    });
+</script>

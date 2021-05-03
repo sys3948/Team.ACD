@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>DB IDE Web App{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- jQuery library -->
@@ -12,6 +13,11 @@
     <!-- Latest compiled JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
+    <!--drawer-->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-drawer.css') }}">
+    <script src="{{ url_for('static', filename='js/bootstrap-drawer.js') }}"></script>
+
+  
     {% block stylesheet %}
       <link rel="stylesheet" href="{{url_for('static', filename='css/base.css')}}">
     {% endblock %}

@@ -16,7 +16,7 @@ class MysqlDatabase():
         self.cur.execute(sql,args)
         return self.cur.fetchone()
     
-    def excuteAll(self, sql, args):
+    def excuteAll(self, sql, args=()):
         self.cur.execute(sql,args)
         return self.cur.fetchall()
     
