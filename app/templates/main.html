@@ -1,35 +1,100 @@
 {% extends 'base.html' %}
 
 
-
-{% block header %}
+{% block main %}
   <div class="text-right">
     <!--메뉴아이콘-->
     <i class="fa fa-bars fa-2x" data-toggle="drawer" data-target="#drawer-1" aria-hidden="true"></i>
   </div>
   {% include 'include/drawers.html' %}
 
-{% endblock %}
-
-
-{% block main %}
-
-
-{# include 'include/confirm_pw.html'#}
-
-<!-- <script>
-    $(".open").click(function(e){
-        e.preventDefault();
-        $('#confirm-pw').modal();
-    });
-        
-        
-    
-</script> -->
-
 
 {% if session.confirmed %}
-  <p>인증되었습니다.</p>
+  <div class="container">
+    <div class="border border-secondary border-top-0 border-right-0 border-left-0 container">
+      <div class="row mb-1 mt-2">
+        <div class="card col bg-light ml-1 mr-1">
+          <div class="card-header">Oracle</div>
+          <div class="card-body">
+            <p>Host</p>
+            <p>Port</p>
+            <p>Schema</p>
+            <p>User</p>
+          </div>
+        </div>
+        <div class="card col bg-light ml-1 mr-1">
+          <div class="card-header">Oracle</div>
+          <div class="card-body">
+            <p>Host: <span>192.168.111.133</span></p>
+            <p>Port: <span></span></p>
+            <p>Schema: <span></span></p>
+            <p>User: <span></span></p>
+          </div>
+        </div>
+        <div class="card col bg-light ml-1 mr-1">
+          <div class="card-header">Oracle</div>
+          <div class="card-body">
+            <p>Host</p>
+            <p>Port</p>
+            <p>Schema</p>
+            <p>User</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="border border-secondary border-top-0 border-right-0 border-left-0 container">
+      <h3 class="mt-2 container text-center">내부 DBMS</h3>
+      <div class="row mb-1">
+        <div class="col text-center">
+          <a class="btn btn-danger" href="#">Oracle</a>
+        </div>
+        <div class="col text-center">
+          <a class="btn btn-primary" href="#">MySQL</a>
+        </div>
+        <div class="col text-center">
+          <a class="btn btn-info" href="#">MariaDB</a>
+        </div>
+        <div class="col text-center">
+          <a class="btn btn-success" href="#">MongoDB</a>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row mt-3 mb-3">
+        <div class="col-md-9 text-center">
+          <h3>외부 DBMS 목록</h3>
+        </div>
+        <div class="col-md-3 text-center">
+          <a class="btn btn-primary" href="#">Connect</a>
+          <a class="btn btn-primary" href="#">Edit</a>
+        </div>
+      </div>
+      <div class="container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>DBMS</th>
+              <th>HOST</th>
+              <th>PORT</th>
+              <th>ALIAS</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Oracle</td>
+              <td>192.168.111.133</td>
+              <td>1521</td>
+              <td>Oracle</td>
+              <td>
+                <a class="btn btn-danger" href="#">Delete</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 {% else %}
   <h2>인증되지 않는 계정입니다.</h2>
   <h2>인증하기 위한 절차 메일을 {{email}}로 전송했으니 확인하여 인증절차를 진행해 주세요.</h2>
