@@ -1,0 +1,66 @@
+{% extends 'admin/admin_base.html' %}
+
+
+{% block content %}
+
+<!--탭 버튼-->
+<ul class="nav nav-tabs mt-5">
+    <li class="nav-item">
+        <a href="#users" class="nav-link active text-dark font-weight-bold" data-toggle="tab">Users</a>
+    </li>
+    <li class="nav-item">
+        <a href="#delete_users" class="nav-link text-dark font-weight-bold" data-toggle="tab">Delete user</a>
+    </li>
+</ul>
+<!--탭 내용-->
+<div class="tab-content">
+    <!--users-->
+    <div class="tab-pane fade show active" id="users">
+        <table class="table table-condensed mt-5">
+            <th>
+                <td class="font-weight-bold">user id</td>
+                <td class="font-weight-bold">email</td>
+                <td class="font-weight-bold">stampdate</td>
+                <td class="font-weight-bold">grant</td>
+                <td></td>
+
+            </th>
+            {% for user in users %}
+                <tr>
+                    <td>{{loop.index}}</td>
+                    <td>{{user.1}}</td>
+                    <td>{{user.3}}</td>
+                    <td>{{user.4}}</td>
+                    <td>{{user.5}}</td>
+                    <td>
+                        <a class="btn bg-dark text-white" href="{{url_for('admin.edit_user',id=user.0)}}">Edit</a>
+                        <a class="btn btn-danger" href="{{url_for('admin.delete_user',id=user.0)}}">Delete</a>
+                    </td>
+                </tr>
+            {% endfor %}
+
+        </table>
+    </div>
+    <!--delete users-->
+    <div class="tab-pane fade" id="delete_users">
+        <table class="table table-condensed mt-5">
+            <th>
+                <td class="font-weight-bold">user id</td>
+                <td class="font-weight-bold">email</td>
+                <td class="font-weight-bold">stampdate</td>
+            </th>
+            {% for user in delete_users %}
+                <tr>
+                    <td>{{loop.index}}</td>
+                    <td>{{user.1}}</td>
+                    <td>{{user.2}}</td>
+                    <td>{{user.3}}</td>
+                </tr>
+            {% endfor %}
+
+        </table>
+    </div>
+    
+</div>
+
+{% endblock %}

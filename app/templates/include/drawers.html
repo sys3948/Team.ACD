@@ -1,0 +1,23 @@
+<div class="drawer drawer-right slide" tabindex="-1" role="dialog" aria-labelledby="drawer-1-title" aria-hidden="true" id="drawer-1">
+    <div class="drawer-content drawer-content-scrollable" role="document">
+        <div class="drawer-header">
+            <div class="d-flex justify-content-between">
+                <p class="font-weight-bold">User ID: {{session.user_id}}</p>
+                <i class="fa fa-times fa-lg close-menu" data-dismiss="drawer" aria-label="Close" aria-hidden="true"></i>
+            </div>
+            <p class="font-weight-bold">Email: {{session.email}}</p>
+        </div>
+        <div class="drawer-body text-center">
+            
+            <a class="text-dark font-weight-bold" href="{{ url_for('auth.change_pw') }}">Reset Password</a><br>
+            <a class="text-dark font-weight-bold" data-toggle="modal" data-target="#confirm-pw" data-dismiss="drawer" href="#">
+                Change Email
+            </a><br>
+            <a class="text-dark font-weight-bold" href="{{ url_for('auth.sign_out') }}">Log out</a><br>
+        </div>
+        
+    </div>
+</div>
+<!--비밀번호 확인 모달-->
+{% include 'include/confirm_pw_modal.html' %}
+

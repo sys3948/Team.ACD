@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block header %}
+  <h1>{{user}}님 권한 변경알림입니다.</h1>
+{% endblock %}
+
+{% block main %}
+  <p>{{user}}님의 권한이 '{{grant}}'상태로 변경되었습니다.</p>
+  <p>사유는 다음과 같습니다.</p>
+  <pre>{{reason}}</pre>
+{% endblock %}

@@ -24,7 +24,7 @@ def sign_in():
                                   database='ACD')
         user_cur = user_conn.cursor()
 
-        user_cur.execute('select id, user_id, password_hash, confirmed from user where user_id = %s', (request.form.get('user_id'),))
+        user_cur.execute('select id, user_id, password_hash, confirmed,email from user where user_id = %s', (request.form.get('user_id'),))
         user_data = user_cur.fetchone()
         user_cur.close()
         user_conn.close()
@@ -35,7 +35,9 @@ def sign_in():
             print("test")
             if check_password_hash(user_data[2], request.form.get('user_pw')):
                 session['id'] = user_data[0]
+                session['user_id'] = user_data[1]
                 session['confirmed'] = user_data[3]
+                session['email'] = user_data[4]
                 return redirect(url_for('dbide.main'))
     return render_template('sign_in.html')
     
@@ -177,9 +179,9 @@ def confirm(token):
                                   database='ACD')
     user_cur = user_conn.cursor()
 
-    user_cur.execute('select id from user where id = %s',(data.get('confirm'),))
-
-    if user_cur.fetchone():
+    user_cur.execute('select id,user_id,email from user where id = %s',(data.get('confirm'),))
+    user = user_cur.fetchone()
+    if user:
         user_cur.execute('update user set confirmed = 1 where id = %s', (data.get('confirm'),))
         user_conn.commit()
         user_cur.close()
@@ -187,6 +189,8 @@ def confirm(token):
 
         session['id'] = data.get('confirm')
         session['confirmed'] = '1'
+        session['user_id'] = user[1]
+        session['email'] = user[2]
 
     return redirect(url_for('dbide.main'))
 
@@ -194,15 +198,16 @@ def confirm(token):
 @auth.route('/re_send_email')
 def re_send_email():
     cur = MysqlDatabase()
-    email = cur.excuteOne('select email from user where id=%s', (session.get('id'),))
+    user = cur.excuteOne('select email,user_id from user where id=%s', (session.get('id'),))
+    cur.close()
 
     s = Serializer(current_app.config.get('SECRET_KEY'), 3600)
     token = s.dumps({'confirm':session.get('id')})
 
-    send_email(to = email[0], \
+    send_email(to = user[0], \
                title = '저희 Team A C D의 DB IDE Web App의 회원 가입을 해준 것에 감사합니다.', \
                templates = 'email/confirm', \
-               user = request.form.get('user_id'), \
+               user = user[1], \
                token = token)
 
     return redirect(url_for('dbide.main'))
@@ -273,16 +278,18 @@ def find_pw():
     return render_template('find_pw.html')
 
 
+
+
+#비밀번호 초기화
 @auth.route('/reset_pw/<token>',methods=['GET', 'POST'])
 def reset_pw(token):
+    s = Serializer(current_app.config.get('SECRET_KEY'))
+    try:
+        data = s.loads(token)
+    except Exception as e:
+        return "<script> alert('토큰 오류'); history.back();</script>"
     
     if request.method == "POST":
-        s = Serializer(current_app.config.get('SECRET_KEY'))
-        try:
-            data = s.loads(token)
-        except Exception as e:
-            return "<script> alert('토큰 오류'); history.back();</script>"
-
         mysql_db = MysqlDatabase()
 
         mysql_db.excute(
@@ -298,22 +305,73 @@ def reset_pw(token):
         )
         mysql_db.commit()
         mysql_db.close()
+        session.clear()
         return redirect(url_for('auth.sign_out'))
         
     return render_template('rset_pw.html')
 
+
+#비밀번호 변경    
+@auth.route('/change_pw',methods=['GET'])
+@login_check
+def change_pw():
+    s = Serializer(current_app.config.get('SECRET_KEY'), 3600)
+    token = s.dumps({'id':session.get('id')})
+    send_email(to = session.get('email'), \
+               title = 'Team ACD 비밀번호 찾기', \
+               templates = 'email/find_pw_msg', \
+               token = token)
+    flash("이메일  '" + session.get('email') + "'에 발송되었습니다.")
+    return redirect(url_for('dbide.main'))
+
+
+#이메일 변경
+@auth.route('/change_pw/<token>',methods=['GET','POST'])
+@login_check
+def change_email(token):
+    
+    s = Serializer(current_app.config.get('SECRET_KEY'))
+    try:
+        data = s.loads(token)
+    except Exception as e:
+        flash('토큰오류')
+        return redirect(url_for('dbide.main'))
+
+    if request.method == "POST":
+        mysql_db = MysqlDatabase()
+        mysql_db.excute(
+            '''
+            UPDATE user
+            SET email=%s,confirmed=%s
+            WHERE id=%s
+            ''', 
+            (request.form.get('email'),0,session.get('id'))
+        )
+        
+        mysql_db.commit()
+        mysql_db.close()  
+        session['confirmed'] = 0
+        return redirect(url_for('auth.re_send_email'))
+    
+    return render_template('change_email.html')
+
+
+#비밀번호 확인
 @auth.route('/confirm_pw',methods=['POST'])
 @login_check
 def confirm_pw():
+    
+    
     mysql_db = MysqlDatabase()
     
     row = mysql_db.excuteOne(
-           '''
+        '''       
            SELECT id,password_hash
            FROM user
            WHERE id=%s
-           ''',
-           (session['id'],)
+        '''   
+           ,
+           (session.get('id'),)
          )
    
     mysql_db.close()     
@@ -321,14 +379,10 @@ def confirm_pw():
     if check_password_hash(row[1],request.form.get('pw')):
         s = Serializer(current_app.config.get('SECRET_KEY'), 3600)
         token = s.dumps({'id':row[0]})
-        return redirect(url_for('auth.reset_pw',token=token))
+        return jsonify(token=token.decode("utf-8"))
     else:
-        return "<script>alert('비밀번호가 일치하지 않습니다.'); history.back();</script>"
+        return jsonify(msg='비밀번호가 일치하지 않습니다.')
 
     
-
-
-
-
 
 

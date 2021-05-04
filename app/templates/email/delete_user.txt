@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block header %}
+  <h1>{{user}}님 계정 삭제 알림입니다.</h1>
+{% endblock %}
+
+{% block main %}
+  <p>사유는 다음과 같습니다.</p>
+  <pre>{{reason}}</pre>
+{% endblock %}

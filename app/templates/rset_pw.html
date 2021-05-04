@@ -4,6 +4,10 @@
   [ Find Password ]
 {% endblock %}
 
+{% block header %}
+    {% include 'include/_header.html' %}
+{% endblock %}
+
 {% block main %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/find.css') }}">
 <div class="box-300">
