@@ -34,7 +34,6 @@ def sign_in():
         else:
             print("test")
             if check_password_hash(user_data[2], request.form.get('user_pw')):
-                print("test")
                 session['id'] = user_data[0]
                 session['confirmed'] = user_data[3]
                 return redirect(url_for('dbide.main'))
@@ -67,28 +66,85 @@ def sign_up():
                           )\
                         )
 
-        # user_cur.execute('create database %s' %(request.form.get('user_id')))
-        # user_cur.execute('create user %s@"%" identified by %s', (request.form.get('user_id'), request.form.get('user_pw')))
-        # user_cur.execute('grant all on %s.* to %s@%', (request.form.get('user_id'), request.form.get('user_id')))
-
+        user_cur.execute('create database %s' %(request.form.get('user_id')))
+        user_cur.execute('create user %s@"%" identified by %s', \
+                         (request.form.get('user_id'), request.form.get('user_pw')))
+        user_cur.execute('grant all privileges on %s.* to %s@"%%"' \
+                         %(request.form.get('user_id'), request.form.get('user_id')))
         user_conn.commit()
+
+        maria_conn = mysql.connect(user=current_app.config.get('MYSQL_USER'), \
+                                     password=current_app.config.get('MYSQL_PW'), \
+                                     host=current_app.config.get('DB_HOST'), \
+                                     port=current_app.config.get('MARIA_PORT'), \
+                                     database='mysql')
+        maria_cur = maria_conn.cursor()
+        maria_cur.execute('create database %s' %(request.form.get('user_id')))
+        maria_cur.execute('create user %s@"%" identified by %s', \
+                          (request.form.get('user_id'), request.form.get('user_pw')))
+        maria_cur.execute('grant all privileges on %s.* to %s@"%%"' \
+                          %(request.form.get('user_id'), request.form.get('user_id')))
+        maria_conn.commit()
+        maria_cur.close()
+        maria_conn.close()
+
+        oracle_conn = oracle.connect(current_app.config.get('ORACLE_USER'), \
+                                     current_app.config.get('ORACLE_PW'), \
+                                     current_app.config.get('DB_HOST') + ':' + current_app.config.get('ORACLE_PORT'))
+        oracle_cur = oracle_conn.cursor()
+        oracle_cur.execute('create user ' + request.form.get('user_id') + ' identified by ' + request.form.get('user_pw'))
+        oracle_cur.execute('grant create session, create table, create view, create sequence to ' + request.form.get('user_id'))
+        oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile '/ora/" + request.form.get('user_id') + ".dbf' size 10m")
+        oracle_cur.execute('alter user ' + request.form.get('user_id') + ' default tablespace ' + request.form.get('user_id'))
+        oracle_cur.execute('alter user ' + request.form.get('user_id') + ' quota unlimited on ' + request.form.get('user_id'))
+
+        oracle_conn.commit()
+        oracle_cur.close()
+        oracle_conn.close()
+
+
         user_cur.execute('select id from user where user_id = %s',(request.form.get('user_id'),))
         token_id = user_cur.fetchone()
+
+        user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
+                                                dbms_connect_pw, dbms_connect_username, \
+                                                dbms_schema) \
+                          value(%s, "mysql", "192.168.111.133", "3306", "mysql", %s, %s, "mysql")', \
+                          (
+                           token_id[0],
+                           request.form.get('user_pw'), \
+                           request.form.get('user_id'), \
+                          )\
+                        )
+        
+        user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
+                                                dbms_connect_pw, dbms_connect_username, \
+                                                dbms_schema) \
+                          value(%s, "maria", "192.168.111.133", "3307", "maria", %s, %s, "maria")', \
+                          (
+                           token_id[0],
+                           request.form.get('user_pw'), \
+                           request.form.get('user_id'), \
+                          )\
+                        )
+
+        user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
+                                                dbms_connect_pw, dbms_connect_username, \
+                                                dbms_schema) \
+                          value(%s, "oracle", "192.168.111.133", "1521", "oracle", %s, %s, "oracle")', \
+                          (
+                           token_id[0],
+                           request.form.get('user_pw'), \
+                           request.form.get('user_id'), \
+                          )\
+                        )
+
+
+        user_conn.commit()
+
         user_cur.close()
         user_conn.close()
 
-        # oracle_conn = oracle.connect(current_app.config.get('ORACLE_USER'), \
-        #                              current_app.config.get('ORACLE_PW'), \
-        #                              '192.168.111.133:1521')
-        # oracle_cur = oracle_conn.cursor()
-        # oracle_cur.execute('create user %s identified by %s', (request.form.get('user_id'), request.form.get('user_pw')))
-        # oracle_cur.execute('grant create session, create table, create view, create sequence to %s', (request.form.get('user_id'),))
-        # oracle_cur.execute('create tablespace %s datafile "/home/sys3948/oracle/%s.dbf size 10m"', (request.form.get('user_id'), request.form.get('user_id')))
-        # oracle_cur.execute('alter user %s quota 10m on %s', (request.form.get('user_id'), request.form.get('user_id')))
-
-        # oracle_conn.commit()
-        # oracle_cur.close()
-        # oracle_conn.close()
 
         s = Serializer(current_app.config.get('SECRET_KEY'), 3600)
         token = s.dumps({'confirm':token_id[0]})
