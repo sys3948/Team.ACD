@@ -4,7 +4,7 @@
 #from flask import ...
 from flask import current_app, render_template, request, session, url_for, redirect, jsonify
 from . import dbide
-from ..database import MysqlDatabase
+from ..database import Database
 from ..decorate import login_check
 
 @dbide.route('/')
@@ -12,7 +12,7 @@ from ..decorate import login_check
 @login_check
 def main():
     if session.get('confirmed') == 0:
-        cur = MysqlDatabase()
+        cur = Database()
         email = cur.excuteOne('select email from user where id=%s', (session.get('id'),))[0]
         cur.close()
     else:

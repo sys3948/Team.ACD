@@ -1,6 +1,5 @@
 # auth directory views.py
 # user 등록, 로그인, 아이디 찾기, 비밀번호 찾기, 비밀번호 변경 페이지의 url을 라우팅하는 뷰함수 python module
-
 #from flask import ...
 from flask import current_app, render_template, request, session, url_for, redirect, jsonify
 from flask import flash,abort
@@ -12,7 +11,7 @@ from datetime import datetime
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from . import auth
 from ..email import send_email
-from ..database import MysqlDatabase
+from ..database import Database
 from ..decorate import login_check
 
 @auth.route('/sign_in', methods=['GET', 'POST'])
@@ -197,7 +196,7 @@ def confirm(token):
 
 @auth.route('/re_send_email')
 def re_send_email():
-    cur = MysqlDatabase()
+    cur = Database()
     user = cur.excuteOne('select email,user_id from user where id=%s', (session.get('id'),))
     cur.close()
 
@@ -223,7 +222,7 @@ def sign_out():
 @auth.route('/find_id',methods=['GET', 'POST'])
 def find_id():
     if request.method == "POST":
-        mysql_db = MysqlDatabase()
+        mysql_db = Database()
 
         row = mysql_db.excuteOne(
                 '''
@@ -253,7 +252,7 @@ def find_id():
 @auth.route('/find_pw',methods=['GET', 'POST'])
 def find_pw():
     if request.method == "POST":
-        mysql_db = MysqlDatabase()
+        mysql_db = Database()
         row = mysql_db.excuteOne(
             '''
                 SELECT id 
@@ -287,11 +286,15 @@ def reset_pw(token):
     try:
         data = s.loads(token)
     except Exception as e:
-        return "<script> alert('토큰 오류'); history.back();</script>"
+        flash('토큰오류')
+        return redirect(url_for('dbide:main'))
     
     if request.method == "POST":
-        mysql_db = MysqlDatabase()
-
+        mysql_db = Database()
+        maria_db = Database(dbms='maria',port=3307,database='mysql')
+        oracle_db= Database(dbms='oracle')
+        user_id = mysql_db.excuteOne("SELECT user_id FROM user WHERE id=%s",(data.get('id'),))[0]
+    
         mysql_db.excute(
             '''
                 UPDATE user
@@ -303,9 +306,40 @@ def reset_pw(token):
              data.get('id')
              )
         )
+        #dbms_info 테이블 비밀번호 변경
+        mysql_db.excute(
+            '''
+                UPDATE dbms_info
+                SET dbms_connect_pw
+                WHERE id=%s
+            ''',
+            (data.get('id'))
+        )
         mysql_db.commit()
+
+        # mysql dbms 비밀번호 변경
+        mysql_db.excute(
+            '''
+                ALTER user %s@'%' IDENTIFIED BY %s 
+            ''',
+            (user_id,request.form.get('pw'),)
+        )
+        
+        #mariadb dbms 비밀번호 변경
+        maria_db.excute(
+            '''
+               ALTER user %s@'%' IDENTIFIED BY %s 
+            ''',
+            (user_id,request.form.get('pw'),)
+        )
+        print('maria modified')
+        #oracle dbms 비밀번호 변경
+        oracle_db.excute(f"ALTER user {user_id} IDENTIFIED BY {request.form.get('pw')}",())
+
         mysql_db.close()
-        session.clear()
+        maria_db.close()
+        oracle_db.close()
+        
         return redirect(url_for('auth.sign_out'))
         
     return render_template('rset_pw.html')
@@ -338,7 +372,7 @@ def change_email(token):
         return redirect(url_for('dbide.main'))
 
     if request.method == "POST":
-        mysql_db = MysqlDatabase()
+        mysql_db = Database()
         mysql_db.excute(
             '''
             UPDATE user
@@ -362,7 +396,7 @@ def change_email(token):
 def confirm_pw():
     
     
-    mysql_db = MysqlDatabase()
+    mysql_db = Database()
     
     row = mysql_db.excuteOne(
         '''       

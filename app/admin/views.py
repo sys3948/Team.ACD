@@ -5,7 +5,7 @@
 from . import admin
 from flask import current_app, render_template, request, session, url_for, redirect,flash
 from ..decorate import login_check,manager_check
-from ..database import MysqlDatabase
+from ..database import Database
 from ..email import send_email
 
 
@@ -14,7 +14,7 @@ from ..email import send_email
 @manager_check
 def admin_main():
     
-    mysql_db = MysqlDatabase()
+    mysql_db = Database()
     delete_users =  mysql_db.excuteAll('SELECT * FROM delete_user')
     users = mysql_db.excuteAll('SELECT * FROM user')
     mysql_db.close()      
@@ -26,18 +26,43 @@ def admin_main():
 @login_check
 @manager_check
 def delete_user(id):
-    mysql_db = MysqlDatabase()
-    user = mysql_db.excuteOne('SELECT user_id,email,grant_num FROM user WHERE id=%s',(id,))
+    mysql_db = Database()
+    user = mysql_db.excuteOne('SELECT user_id,email,grant_num,id FROM user WHERE id=%s',(id,))
     if request.method == "POST":
+        maria_db = Database(dbms='maria',port=3307,database='mysql')
+        oracle_db= Database(dbms='oracle')
+        
+        # user테이블 계정 삭제
         mysql_db.excute('DELETE FROM user WHERE id=%s', (id,))
         mysql_db.commit()
-        mysql_db.close()
+        
+        #mysql 계정 삭제 및 database 삭제
+        mysql_db.excute(f"drop user {user[0]}@'%'",())
+        mysql_db.excute(f"drop database {user[0]}",())
+        
+        #mariadb 계정 삭제 및 database 삭제
+        maria_db.excute(f"drop user {user[0]}@'%'",())
+        maria_db.excute(f"drop database {user[0]}",())
+        
+        #오라클 계정 삭제 및 tablespace 삭제
+        oracle_db.excute(f'drop tablespace {user[0]} including contents and datafiles cascade constraints',())
+        oracle_db.excute(f'drop user {user[0]} cascade',())
+        
+        mysql_db.close()          
+        maria_db.close()
+        oracle_db.close()
+
         send_email(to = user[1], \
                    title = 'Team A C D 계정 삭제 알림입니다.', \
                    templates = 'email/delete_user', \
                    user = user[0], \
                    reason=request.form.get('reason'))
-        flash(f'이메일이 {user[1]}로 발송되었습니다.')           
+        
+        flash(f'이메일이 {user[1]}로 발송되었습니다.')
+
+        #로그인한 관리자가 삭제 되면 로그아웃
+        if id  == user[3]:
+            redirect(url_for('auth.sign_out'))
         return redirect(url_for('admin.admin_main'))
 
     
@@ -49,7 +74,7 @@ def delete_user(id):
 @login_check
 @manager_check
 def edit_user(id):
-    mysql_db = MysqlDatabase()
+    mysql_db = Database()
     user = mysql_db.excuteOne('SELECT user_id,email,grant_num FROM user WHERE id=%s',(id,))
     if request.method == "POST":
         grant_dict = {'0':'일반','1':'내부 DB사용불가','2':'로그인 불가'}
