@@ -1,0 +1,15 @@
+{% extends "/no_major/base.html" %}
+
+{% block execute %}
+  <div class="container">
+    <h2>데이터베이스 생성</h2>
+    <form>
+      <div class="form-group">
+        <input type="text" name="db" class="form-control" placeholder="생성할 DataBase의 이름을 작성해주세요." />
+      </div>
+      <div class="form-group text-center">
+        <input type="submit" class="btn btn-primary" value="Craete" />
+      </div>
+    </form>
+  </div>
+{% endblock %}

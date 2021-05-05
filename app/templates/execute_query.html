@@ -35,8 +35,8 @@
     <div class="col-md-8 border border-top-0 border-bottom-0 border-right-0 q-height">
       <div class="border border-top-0 border-left-0 border-right-0">
         <div>
-          <a href="#" class="btn btn-primary">전공자</a>
-          <a href="#" class="btn btn-primary">비전공자</a>
+          <a href="{{ url_for('dbide.execute_query', id=id) }}" class="btn btn-primary">전공자</a>
+          <a href="{{ url_for('dbide.execute_query_no_major', id=id) }}" class="btn btn-primary">비전공자</a>
         </div>
         <div class="container mt-3">
           <div class="container border" id="edit" contenteditable="true" style="overflow: auto;"></div>
