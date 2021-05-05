@@ -19,7 +19,9 @@ create table dbms_info(
   dbms_connect_pw varchar(30),
   dbms_connect_username varchar(30),
   dbms_schema varchar(30),
-  inner_num int default 1,	
+  inner_num int default 1,
+  create_datetime DATETIME DEFAULT current_timestamp,
+  stampdatetime DATETIME,
   foreign key(user_id) references user(id) on delete cascade
 );
 

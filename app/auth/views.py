@@ -5,7 +5,6 @@ from flask import current_app, render_template, request, session, url_for, redir
 from flask import flash,abort
 from werkzeug.security import generate_password_hash, check_password_hash
 import cx_Oracle as oracle
-import mariadb
 import mysql.connector as mysql
 from datetime import datetime
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer

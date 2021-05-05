@@ -12,51 +12,46 @@
 {% if session.confirmed %}
   <div class="container">
     <div class="border border-secondary border-top-0 border-right-0 border-left-0 container">
-      <div class="row mb-1 mt-2">
-        <div class="card col bg-light ml-1 mr-1">
-          <div class="card-header">Oracle</div>
-          <div class="card-body">
-            <p>Host</p>
-            <p>Port</p>
-            <p>Schema</p>
-            <p>User</p>
-          </div>
-        </div>
-        <div class="card col bg-light ml-1 mr-1">
-          <div class="card-header">Oracle</div>
-          <div class="card-body">
-            <p>Host: <span>192.168.111.133</span></p>
-            <p>Port: <span></span></p>
-            <p>Schema: <span></span></p>
-            <p>User: <span></span></p>
-          </div>
-        </div>
-        <div class="card col bg-light ml-1 mr-1">
-          <div class="card-header">Oracle</div>
-          <div class="card-body">
-            <p>Host</p>
-            <p>Port</p>
-            <p>Schema</p>
-            <p>User</p>
-          </div>
-        </div>
-      </div>
+      {% if out_dbms_info %}
+        {% for out_info in out_dbms_info[:3] %}
+          <a href="#" class="card col bg-light ml-1 mr-1">
+            <div class="card-header">
+              <p>DBMS : <span>{{ out_info[1] }}</span></p>
+              <p>Alias : <span>{{ out_info[4] }}</span></p>
+            </div>
+            <div class="card-body">
+              <p>Host: <span>{{ out_info[2] }}</span></p>
+              <p>Port: <span>{{ out_info[3] }}</span></p>
+              <p>Schema: <span>{{ out_info[6] }}</span></p>
+              <p>User: <span>{{ out_info[5] }}</span></p>
+              <p>connect time: <span>{{ out_info[7] }}</span></p>
+            </div>
+          </a>
+        {% endfor %}
+      {% endif %}
     </div>
     <div class="border border-secondary border-top-0 border-right-0 border-left-0 container">
       <h3 class="mt-2 container text-center">내부 DBMS</h3>
       <div class="row mb-1">
-        <div class="col text-center">
-          <a class="btn btn-danger" href="#">Oracle</a>
-        </div>
-        <div class="col text-center">
-          <a class="btn btn-primary" href="#">MySQL</a>
-        </div>
-        <div class="col text-center">
-          <a class="btn btn-info" href="#">MariaDB</a>
-        </div>
-        <div class="col text-center">
-          <a class="btn btn-success" href="#">MongoDB</a>
-        </div>
+        {% for inner_info in inner_dbms_info %}
+          {% if inner_info[1] == 'oracle' %}
+            <div class="col text-center">
+              <a class="btn btn-danger" href="{{ url_for('dbide.execute_query', id=inner_info[0])}}">Oracle</a>
+            </div>
+          {% elif inner_info[1] == 'mysql' %}
+            <div class="col text-center">
+              <a class="btn btn-primary" href="{{ url_for('dbide.execute_query', id=inner_info[0])}}">MySQL</a>
+            </div>
+          {% elif inner_info[1] == 'maria' %}
+            <div class="col text-center">
+              <a class="btn btn-info" href="{{ url_for('dbide.execute_query', id=inner_info[0])}}">MariaDB</a>
+            </div>
+          {% else %}
+            <div class="col text-center">
+              <a class="btn btn-success" href="{{ url_for('dbide.execute_query', id=inner_info[0])}}">MongoDB</a>
+            </div>
+          {% endif %}
+        {% endfor %}
       </div>
     </div>
     <div class="container">
@@ -65,11 +60,12 @@
           <h3>외부 DBMS 목록</h3>
         </div>
         <div class="col-md-3 text-center">
-          <a class="btn btn-primary" href="#">Connect</a>
+          <a class="btn btn-primary" href="{{ url_for('dbide.connect_dbms') }}">Connect</a>
           <a class="btn btn-primary" href="#">Edit</a>
         </div>
       </div>
       <div class="container">
+        {% if out_dbms_info %}
         <table class="table">
           <thead>
             <tr>
@@ -77,21 +73,32 @@
               <th>HOST</th>
               <th>PORT</th>
               <th>ALIAS</th>
+              <th>User</th>
+              <th>Schema</th>
+              <th>Connect Datetime</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Oracle</td>
-              <td>192.168.111.133</td>
-              <td>1521</td>
-              <td>Oracle</td>
-              <td>
-                <a class="btn btn-danger" href="#">Delete</a>
-              </td>
-            </tr>
+              {% for info in out_dbms_info %}
+                <tr>
+                  <td>{{ info[1] }}</td>
+                  <td>{{ info[2] }}</td>
+                  <td>{{ info[3] }}</td>
+                  <td>{{ info[4] }}</td>
+                  <td>{{ info[5] }}</td>
+                  <td>{{ info[6] }}</td>
+                  <td>{{ info[7] }}</td>
+                  <td>
+                    <a class="btn btn-danger" href="#">Delete</a>
+                  </td>
+                </tr>
+              {% endfor %}
           </tbody>
         </table>
+        {% else %}
+          <h4 class="text-center">등록된 외부 DBMS가 존재하지 않습니다.</h4>
+        {% endif %}
       </div>
     </div>
   </div>

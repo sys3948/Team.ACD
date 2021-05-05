@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block stylesheet %}
+  {{ super() }}
+  <style>
+    .input-block{
+      max-width: 50%;
+    }
+  </style>
+{% endblock %}
+
+{% block header %}
+  {% include 'include/_header.html' %}
+  <div class="text-right">
+    <!--메뉴아이콘-->
+    <i class="fa fa-bars fa-2x" data-toggle="drawer" data-target="#drawer-1" aria-hidden="true"></i>
+  </div>
+  {% include 'include/drawers.html' %}
+{% endblock %}
+
+{% block  main%}
+  <div class="container">
+    <h3 class="">Connect DBMS</h3>
+    <form class="" id="connect-form">
+      <div class="input-block">
+        <div class="form-group">
+          <label for="dbms">DBMS :</label>
+          <select class="form-control" id="dbms">
+            <option value="oracle">Oracle</option>
+            <option value="mysql">MySQL</option>
+            <option value="maria">MariaDB</option>
+            <option value="mongo">MongoDB</option>
+          </select>
+        </div>
+        <div class="form-group container">
+          <div class="row">
+            <input type="text" class="form-control col-md-8 mr-2" id="host" name="" placeholder="hostname(IP)" />
+            <input type="text" class="form-control col-md-3" id="port" name="" placeholder="port" />
+          </div>
+        </div>
+        <div class="form-group">
+          <input type="text" class="form-control" id="user-id" name="" placeholder="User ID" />
+        </div>
+        <div class="form-group">
+          <input type="password" class="form-control" id="user-pw" name="" placeholder="Password" />
+        </div>
+        <div class="form-group">
+          <input type="text" class="form-control" id="alias" name="" placeholder="Alias" />
+        </div>
+        <div class="form-group">
+          <input type="text" class="form-control" id="schema" name="" placeholder="Schema" />
+        </div>
+      </div>
+      <div class="container text-center">
+        <input type="submit" class="btn btn-primary" value="Connect" />
+      </div>
+    </form>
+  </div>
+
+  <script>
+    $(function(){
+      document.getElementById('connect-form').onsubmit = (e) => {
+        e.preventDefault();
+        const dbms = document.getElementById('dbms').value;
+        const host = document.getElementById('host').value; // 필수
+        const port = document.getElementById('port').value; // 필수
+        const user_id = document.getElementById('user-id').value; // 필수
+        const user_pw = document.getElementById('user-pw').value; // 필수
+        const alias = document.getElementById('alias').value;
+        const schema = document.getElementById('schema').value; // 필수
+
+        if(host === ""){
+          alert('hostname이 입력되어 있지 않습니다. hostname을 입력해주세요.')
+          return false;
+        }else{
+          
+        }
+
+        if(port === ""){
+          alert('port가 입력되어 있지 않습니다. port를 입력해주세요.')
+          return false;
+        }else{
+          
+        }
+
+        if(user_id === ""){
+          alert('User ID가 입력되어 있지 않습니다. User ID를 입력해주세요.')
+          return false;
+        }else{
+          
+        }
+
+        if(user_pw === ""){
+          alert('Password가 입력되어 있지 않습니다. Password를 입력해주세요.')
+          return false;
+        }else{
+          
+        }
+
+        if(schema === ""){
+          alert('Schema가 입력되어 있지 않습니다. Schema를 입력해주세요.')
+          return false;
+        }else{
+          
+        }
+
+      }
+    });
+  </script>
+{% endblock %}
