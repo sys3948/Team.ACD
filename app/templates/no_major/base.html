@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block stylesheet %}
+  {{ super() }}
+  <style>
+    .q-height{
+      min-height: 80vh;
+    }
+    #edit{
+      min-height: 30vh;
+      height: 30vh;
+      max-height: 30vh;
+    }
+    .menu{
+      height: 100%;
+    }
+    .t-list{
+      height: 70%;
+    }
+    .ddl-block{
+      height: 30%;
+    }
+    .test-line{
+        width: 230px;
+        height: 40px;
+    }
+  </style>
+{% endblock %}
+
+{% block header %}
+  {% include 'include/_header.html' %}
+  <div class="text-right">
+    <!--메뉴아이콘-->
+    <i class="fa fa-bars fa-2x" data-toggle="drawer" data-target="#drawer-1" aria-hidden="true"></i>
+  </div>
+  {% include 'include/drawers.html' %}
+{% endblock %}
+
+{% block main %}
+  <div class="row container">
+    <div class="col-md-4 border border-top-0 border-bottom-0 border-left-0 q-height">
+      <div class="menu">
+        <div class="t-list"></div>
+        <div class="ddl-block">
+          <div class="container mb-2">
+            <a class="btn btn-primary col-md-12" href="{{ url_for('dbide.execute_query_no_major_create_table', id = id) }}">테이블 생성</a>
+          </div>
+          <div class="container mb-2">
+            <div class="row">
+              <a class="btn btn-primary col mr-2" href="{{ url_for('dbide.execute_query_no_major_alter_table', id = id) }}">테이블 수정</a>
+              <a class="btn btn-primary col" href="{{ url_for('dbide.execute_query_no_major_drop_talbe', id = id) }}">테이블 삭제</a>
+            </div>
+          </div>
+          <div class="container mb-2">
+            <a class="btn btn-primary col-md-12" href="{{ url_for('dbide.execute_query_no_major_create_db', id=id) }}">데이터베이스 생성</a>
+          </div>
+          <div class="container">
+            <a class="btn btn-primary col-md-12" href="{{ url_for('dbide.execute_query_no_major_drop_db', id=id) }}">데이터베이스 삭제</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8 border border-top-0 border-bottom-0 border-right-0 q-height">
+      <div>
+        <div class="container">
+          <a href="{{ url_for('dbide.execute_query', id=id) }}" class="btn btn-primary">전공자</a>
+          <a href="{{ url_for('dbide.execute_query_no_major', id=id) }}" class="btn btn-primary">비전공자</a>
+        </div>
+        <div class="container mt-3">
+          <div class="mt-2 mb-2">
+            {% block query_btn %}
+            {% endblock %}
+          </div>
+        </div>
+      </div>
+      <div>
+        {% block execute %}
+        {% endblock %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

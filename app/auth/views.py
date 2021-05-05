@@ -109,33 +109,36 @@ def sign_up():
         user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
                                                 dbms_connect_pw, dbms_connect_username, \
                                                 dbms_schema) \
-                          value(%s, "mysql", "192.168.111.133", "3306", "mysql", %s, %s, "mysql")', \
+                          value(%s, "mysql", "192.168.111.133", "3306", "mysql", %s, %s, %s)', \
                           (
                            token_id[0],
                            request.form.get('user_pw'), \
                            request.form.get('user_id'), \
+                           request.form.get('user_id') \
                           )\
                         )
         
         user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
                                                 dbms_connect_pw, dbms_connect_username, \
                                                 dbms_schema) \
-                          value(%s, "maria", "192.168.111.133", "3307", "maria", %s, %s, "maria")', \
+                          value(%s, "maria", "192.168.111.133", "3307", "maria", %s, %s, %s)', \
                           (
                            token_id[0],
                            request.form.get('user_pw'), \
                            request.form.get('user_id'), \
+                           request.form.get('user_id') \
                           )\
                         )
 
         user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
                                                 dbms_connect_pw, dbms_connect_username, \
                                                 dbms_schema) \
-                          value(%s, "oracle", "192.168.111.133", "1521", "oracle", %s, %s, "oracle")', \
+                          value(%s, "oracle", "192.168.111.133", "1521", "oracle", %s, %s, %s)', \
                           (
                            token_id[0],
                            request.form.get('user_pw'), \
                            request.form.get('user_id'), \
+                           request.form.get('user_id') \
                           )\
                         )
 

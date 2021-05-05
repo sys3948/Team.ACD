@@ -1,0 +1,19 @@
+{% extends "/no_major/base.html" %}
+
+{% block execute %}
+  <div class="container">
+    <h2>{{title}} 삭제</h2>
+    <form>
+      <div class="form-group">
+        <select class="form-control" id="dbms">
+          <option>DBMS</option>
+          <option>Oracle</option>
+          <option>MySQL</option>
+        </select>
+      </div>
+      <div class="form-group text-center">
+        <input type="submit" class="btn btn-primary" value="Drop" />
+      </div>
+    </form>
+  </div>
+{% endblock %}

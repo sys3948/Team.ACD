@@ -1,0 +1,111 @@
+{% extends "/no_major/base.html" %}
+
+{% block execute %}
+  <div class="container">
+    <h2>테이블 {{title}}</h2>
+    <form>
+      <div class="form-group">
+        <input type="text" class="form-control" placeholder="생성할 테이블의 이름을 작성해주세요.">
+      </div>
+      <div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Column Name</th>
+              <th>Type</th>
+              <th>Not Null</th>
+              <th>Unique</th>
+              <th>Index</th>
+              <th>PK</th>
+              <th>Defaults</th>
+            </tr>
+          </thead>
+          <tbody>
+              <tr>
+                <td>
+                  <input class="form-control" type="text" value="" />
+                </td>
+                <td>
+                  <select class="form-control">
+                    <option>int</option>
+                  </select>
+                </td>
+                <td>
+                  <input type="checkbox" class="form-control" value="not_null" />
+                </td>
+                <td>
+                  <input type="checkbox" class="form-control" value="unique" />
+                </td>
+                <td>
+                  <input type="checkbox" class="form-control" value="index" />
+                </td>
+                <td>
+                  <input type="checkbox" class="form-control" value="pk" />
+                </td>
+                <td>
+                  <input type="text" class="form-control" value="" />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <input class="form-control" type="text" value="" />
+                </td>
+                <td>
+                  <select class="form-control">
+                    <option>int</option>
+                  </select>
+                </td>
+                <td>
+                  <input type="checkbox" class="form-control" value="not_null" />
+                </td>
+                <td>
+                  <input type="checkbox" class="form-control" value="unique" />
+                </td>
+                <td>
+                  <input type="checkbox" class="form-control" value="index" />
+                </td>
+                <td>
+                  <input type="checkbox" class="form-control" value="pk" />
+                </td>
+                <td>
+                  <input type="text" class="form-control" value="" />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <input class="form-control" type="text" value="" />
+                </td>
+                <td>
+                  <select class="form-control">
+                    <option>int</option>
+                  </select>
+                </td>
+                <td>
+                  <input type="checkbox" class="form-control" value="not_null" />
+                </td>
+                <td>
+                  <input type="checkbox" class="form-control" value="unique" />
+                </td>
+                <td>
+                  <input type="checkbox" class="form-control" value="index" />
+                </td>
+                <td>
+                  <input type="checkbox" class="form-control" value="pk" />
+                </td>
+                <td>
+                  <input type="text" class="form-control" value="" />
+                </td>
+              </tr>
+          </tbody>
+        </table>
+          <div class="form-group text-center">
+            <button type="button" class="btn btn-primary">+</button>
+            <button type="button" class="btn btn-danger">-</button>
+          </div>
+      </div>
+      <div class="form-group text-center">
+        <input type="submit" class="btn btn-primary" value="create table" />
+      </div>
+    </form>
+  </div>
+{% endblock %}
