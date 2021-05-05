@@ -26,7 +26,11 @@
 {% block main %}
   <div class="row container">
     <div class="col-md-4 border border-top-0 border-bottom-0 border-left-0 q-height">
-      <h2>접속한 계정의 테이블 목록</h2>
+      <h2>테이블 리스트</h2>
+      <div id="table-list">
+        {% include 'include/table_nav.html' %}
+      </div>
+      
     </div>
     <div class="col-md-8 border border-top-0 border-bottom-0 border-right-0 q-height">
       <div class="border border-top-0 border-left-0 border-right-0">
@@ -35,35 +39,56 @@
           <a href="#" class="btn btn-primary">비전공자</a>
         </div>
         <div class="container mt-3">
-          <div class="container border" id="edit" contenteditable="true"></div>
+          <div class="container border" id="edit" contenteditable="true" style="overflow: auto;"></div>
+          
           <div class="mt-2 mb-2 text-right">
-            <button type="button" class="btn btn-primary" id="result">결과</button>
+            <button type="button" class="btn btn-primary" id="result" dbms_info_id="{{id}}">결과</button>
             <button type="button" class="btn btn-primary" id="plan">실행 계획</button>
           </div>
         </div>
       </div>
-      <div>
-        <table class="table">
-          <thead>
-            <tr>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td></td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="alert alert-info" style="display: none;">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        <span id="alert-msg"></span>
+      </div>
+      <div id="query-result">
+          {% include 'include/query_result.html' %}
+        
       </div>
     </div>
   </div>
 
   <script>
       $(function(){
-          document.getElementById('result').onclick = (e) => {
-            console.log(document.getElementById('edit').innerText);
-          }
+          // document.getElementById('result').onclick = (e) => {}
+
+          $("#result").click(function(){
+
+             console.log(document.getElementById('edit').innerText)
+             
+              var content = $("#edit").text().replace("''", '');
+              console.log(content);
+              $.ajax({
+                type : "post",
+                url : "/execute_query/"+$(this).attr("dbms_info_id"),
+                data : {
+                  'query' : content,
+                },
+                success : (response) => {
+                   if(response.msg){
+                      $(".alert-info").show();
+                      $("#table-list").empty();
+                      $("#alert-msg").text(response.msg);
+                      $("#table-list").append(response.nav);
+                   }else{
+                    $("#table-list").empty();
+                    $("#query-result").empty();
+                    $("#query-result").append(response.html);
+                    $("#table-list").append(response.nav);
+                   }
+                }
+              });
+          });
       })
   </script>
 {% endblock %}

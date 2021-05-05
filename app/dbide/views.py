@@ -7,6 +7,7 @@ from . import dbide
 import mysql.connector as mysql
 from ..database import Database
 from ..decorate import login_check
+import re
 
 @dbide.route('/')
 @dbide.route('/main')
@@ -18,7 +19,7 @@ def main():
         cur.close()
     else:
         email = None
-        cur = MysqlDatabase()
+        cur = Database()
         out_dbms_info = cur.excuteAll('select db_id, dbms, hostname, port_num, alias, \
                                               dbms_connect_username, dbms_schema, \
                                               stampdatetime \
@@ -44,26 +45,59 @@ def connect_dbms():
     return render_template('connect_dbms.html')
 
 
+
 @login_check
-@dbide.route('/execute_query/<id>')
+@dbide.route('/execute_query/<id>',methods=['GET','POST'])
 def execute_query(id):
-    cur = MysqlDatabase()
+    cur = Database()
     db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
                              dbms_connect_username, dbms_schema \
                              from dbms_info \
                              where db_id = %s', (id,))
 
-    if db_info[0] == 'mysql':
-        db_conn = mysql.connect(host = db_info[1], port = db_info[2], user = db_info[4], passwd = db_info[3], database = db_info[6])
-    elif db_info[0] == 'maria':
-        pass
-    elif db_info[0] == 'oracle':
-        pass
-    elif db_info[0] == 'mongo':
-        pass
+    
+    
+    user_db = Database(dbms=db_info[0],host=db_info[1],port = db_info[2],user = db_info[4],password=db_info[3],database = db_info[5])
+    tables = user_db.excuteAll('show tables')
+    if request.method == "POST":
+        query = request.form.get('query')
+        last_query = query.split(';')[-2]
+        
+    
 
-    db_cur = db_conn.cursor()
-    db_cur.execute('show tables')
-    t_info = db_cur.fetchone()
+        
+        results = None
+        nav  = render_template('include/table_nav.html',tables=tables)
+        #select문일 경우
+        if re.compile(r'(SELECT|select)+.+(FROM|from)+.+').search(last_query):
 
-    return render_template('execute_query.html')
+            results=user_db.excuteAll(last_query,())
+            
+            last_query = last_query.lower()
+            start_index = last_query.find('select') + len('select')
+            end_index = last_query.find('from')
+            table_name = last_query[end_index+len('from'):last_query.find('where')].strip() if last_query.find('where') != -1 else last_query[end_index+len('from'):].strip()
+            colums = last_query[start_index:end_index].strip()
+            
+            if colums == '*':
+                colums = [col[0] for col in user_db.get_cursor().description]
+                
+            else:
+                colums = [el.strip() for el in colums.split(',')]    
+            print(results)
+            
+
+            html = render_template('include/query_result.html',results=results,colums=colums,range=(0,len(colums)))
+            
+            return jsonify({'html':html,'nav':nav})
+        else:
+            
+            try:
+                user_db.excute(last_query, ())
+                user_db.commit()
+                return jsonify({'msg':'쿼리실행 성공했습니다.','nav':nav})
+            except Exception as e:
+                return jsonify({'msg':'에러가 발생했습니다.','nav':nav})
+
+    user_db.close()
+    return render_template('execute_query.html',tables=tables,id=id)

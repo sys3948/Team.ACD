@@ -1,0 +1,19 @@
+<table class="table">
+    <thead>
+      <tr>
+        {% for col in colums %}
+            <th>{{col}}</th>
+        {% endfor%}
+      </tr>
+    </thead>
+    <tbody>
+        {% for row in results %}
+        <tr>
+            {% for i in range %}
+                <td>{{row[i]}}</td>
+            {% endfor%}
+            
+        </tr>
+        {% endfor %}
+    </tbody>
+  </table>
