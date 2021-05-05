@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block stylesheet %}
+  {{super()}}
+  <style>
+    .q-height{
+      min-height: 80vh;
+    }
+    #edit{
+      min-height: 30vh;
+      height: 30vh;
+      max-height: 30vh;
+    }
+  </style>
+{% endblock %}
+
+{% block header %}
+  {% include 'include/_header.html' %}
+  <div class="text-right">
+    <!--메뉴아이콘-->
+    <i class="fa fa-bars fa-2x" data-toggle="drawer" data-target="#drawer-1" aria-hidden="true"></i>
+  </div>
+  {% include 'include/drawers.html' %}
+{% endblock %}
+
+{% block main %}
+  <div class="row container">
+    <div class="col-md-4 border border-top-0 border-bottom-0 border-left-0 q-height">
+      <h2>접속한 계정의 테이블 목록</h2>
+    </div>
+    <div class="col-md-8 border border-top-0 border-bottom-0 border-right-0 q-height">
+      <div class="border border-top-0 border-left-0 border-right-0">
+        <div>
+          <a href="#" class="btn btn-primary">전공자</a>
+          <a href="#" class="btn btn-primary">비전공자</a>
+        </div>
+        <div class="container mt-3">
+          <div class="container border" id="edit" contenteditable="true"></div>
+          <div class="mt-2 mb-2 text-right">
+            <button type="button" class="btn btn-primary" id="result">결과</button>
+            <button type="button" class="btn btn-primary" id="plan">실행 계획</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+      $(function(){
+          document.getElementById('result').onclick = (e) => {
+            console.log(document.getElementById('edit').innerText);
+          }
+      })
+  </script>
+{% endblock %}

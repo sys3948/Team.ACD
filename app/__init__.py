@@ -3,7 +3,7 @@
 
 from flask import Flask
 from flask_mail import Mail
-from config import config
+from config import config, DevelopmentConfig
 
 
 mail = Mail()
