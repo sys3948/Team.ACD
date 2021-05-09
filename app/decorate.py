@@ -50,16 +50,17 @@ def connect_db(func):
     def wrapper(*args, **kwargs):
         try:
             cur = Database()
+
             db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
-                             dbms_connect_username, dbms_schema \
+                             dbms_connect_username, dbms_schema,inner_num \
                              from dbms_info \
                              where db_id = %s', (kwargs.get('id'),))
             if db_info[0].lower() == 'oracle':
                 pass
             else:
                 user_db = Database(dbms=db_info[0],host=db_info[1],port = db_info[2],user = db_info[4],password=db_info[3],database = db_info[5])
-            kwargs['user_db_obj'] = user_db
-            
+
+            kwargs['dbms_info'] = {'user_db':user_db,'db_info':db_info}
             cur.close()                 
             return func(*args,**kwargs)
 

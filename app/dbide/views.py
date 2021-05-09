@@ -51,50 +51,100 @@ def connect_dbms():
 @login_check
 @dbide.route('/execute_query/<id>')
 @connect_db
-def execute_query(id,user_db_obj):
+def execute_query(id,dbms_info):
     '''
         쿼리 실행화면
     '''
-    tables = user_db_obj.excuteAll('show tables')
-    user_db_obj.close()
-    return render_template('execute_query.html',tables=tables,id=id)
+    user_db = dbms_info.get('user_db')
+    db_info = dbms_info.get('db_info')
+    #외부 접속 databases 목록 있다, 아니면 없다
+    
+    databases = [db[0] for db in user_db.excuteAll('show databases') if db[0] != 'information_schema' ] if db_info[6] == 0 else None
+    if databases:
+        tables = {}
+        for db in databases:
+            print(user_db.excuteAll(f'show tables from {db}'))
+            tables[db] = user_db.excuteAll(f'show tables from {db}')
+        print(tables)
+    else:
+        tables = user_db.excuteAll('show tables')
+
+    user_db.close()
+    
+    return render_template('execute_query.html',tables=tables,id=id,databases=databases,dbms_schema=db_info[5])
     
 @login_check
 @dbide.route('/execute_query_result/<id>',methods=['POST'])
 @connect_db
-def execute_query_result(id,user_db_obj):
+def execute_query_result(id,dbms_info):
     '''
         쿼리 비동기 처리후 결과 반환
     '''
-    
+    user_db = dbms_info.get('user_db')
+    db_info = dbms_info.get('db_info')
+
     query = request.form.get('query')
 
     json = {}
     msg_list = []
     for sql in sqlparse.split(query):
         try:
-            results = user_db_obj.excuteAll(sql,())
+            results = user_db.excuteAll(sql,())
             msg_list.append(f'{sql}<br>쿼리실행 성공')
 
             #select문 경우 실행
             if results:
-                columns = [col[0] for col in user_db_obj.get_cursor().description ]
+                columns = [col[0] for col in user_db.get_cursor().description ]
                 json['results'] = render_template('include/query_result.html',results=results,columns=columns)
             else:    
-                user_db_obj.commit()
+                user_db.commit()
         except Exception as e:
             print(e)
             msg_list.append({'error_msg':f'{sql}<br>쿼리실행 실패<br>{e}'})
             break
         
-    
-    tables = user_db_obj.excuteAll('show tables')
-    user_db_obj.close()
+    #외부 접속 databases 목록 있다, 아니면 없다
+    databases = [db[0] for db in user_db.excuteAll('show databases') if db[0] != 'information_schema' ] if db_info[6] == 0 else None
+    if databases:
+        tables = {}
+        for db in databases:
+            tables[db] = user_db.excuteAll(f'show tables from {db}')
+    else:
+        tables = user_db.excuteAll('show tables')
 
-    json['tables']   = render_template('include/table_nav.html',tables=tables)
+    user_db.close()
+
+    json['tables']   = render_template('include/table_nav.html',tables=tables,databases=databases,dbms_schema=db_info[5])
     json['msg_list'] = msg_list
     return jsonify(json)
     
+@login_check
+@dbide.route('/connect_schema/<id>/<schema>')
+@connect_db
+def connect_schema(id,schema,dbms_info):
+    
+    user_db = dbms_info.get('user_db')
+    db_info = dbms_info.get('db_info')
+    schema  = schema.strip()
+    json = {}
+    try:
+        
+        tables = user_db.excuteAll(f'show tables from {schema}')
+        
+        cur = Database()
+        cur.excute('UPDATE dbms_info SET dbms_schema=%s WHERE db_id=%s',(schema,id,))
+        cur.commit()
+        cur.close()
+        user_db.close()
+
+        json['msg'] = f"데이터베이스 <b class='text-dark'>{schema}</b>에 sql질의 실행"
+    except Exception as e:
+        print(e)
+        json['error_msg'] = f'{schema}를 사용할수 없습니다.<br>{str(e)}'
+
+    
+    return jsonify(json)    
+
 
 
 @login_check

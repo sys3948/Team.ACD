@@ -55,13 +55,17 @@
         </div>
         <div class="container mt-3">
           <!--<div class="container border" id="edit" contenteditable="true" style="overflow: auto;"></div>-->
+          
+          <div class="alert alert-info" id="schema-msg">
+              데이터베이스 <b class="text-dark">{{dbms_schema}}</b>에 sql질의 실행
+          </div>
           <!--sql editor-->
           <div class="border">
             <textarea rows="4"  cols="50" id="edit"></textarea>
           </div>
           
           <div class="mt-2 mb-2 text-right">
-            <button type="button" class="btn btn-primary" id="result" dbms_info_id="{{id}}">결과</button>
+            <button type="button" class="btn btn-primary" id="result">결과</button>
             <button type="button" class="btn btn-primary" id="plan">실행 계획</button>
           </div>
         </div>
@@ -69,7 +73,7 @@
       <div id="alert-box" style="height: 200px; overflow-y: auto;">
 
       </div>
-      <div id="query-result">
+      <div id="query-result" style="overflow:auto;">
           {% include 'include/query_result.html' %}
         
       </div>
@@ -92,7 +96,7 @@ $("#result").click(function(){
 
   $.ajax({
     type : "post",
-    url : "/execute_query_result/"+$(this).attr("dbms_info_id"),
+    url : "/execute_query_result/{{id}}",
     data : {'query' : editor.getValue()},
     success : (response) => {
       $("#alert-box").empty();
@@ -118,6 +122,7 @@ $("#result").click(function(){
 });
 
 
+ 
 function createMessage(msg,class_name){
   var alert = "";
       alert += "<div class='alert "+class_name+"'>";

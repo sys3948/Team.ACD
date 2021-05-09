@@ -1,5 +1,70 @@
-<ul style="list-style: none;">
+{% if databases %}
+  <!--외부 접속일 경우-->
+  <div class="accordion" id="accordion">
+    {% for db in databases %}
+      <div class="card">
+        <div class="card-header">
+          <button class="btn btn-link connect-schema-btn" type="button" data-toggle="collapse" data-target="#{{db}}">{{db}}</button>
+        </div>
+        <ul id="{{db}}" 
+            {% if dbms_schema == db %}
+              class="card-body collapse show" 
+            {% else %}
+              class="card-body collapse" 
+            {% endif %}
+            data-parent="#accordion" 
+            style="list-style: none;"
+            >
+
+            {% for table in tables[db] %}
+              <li class="table-li">{{table.0}}</li><br>
+            {% endfor %}
+        </ul>
+      </div>
+      
+    {% endfor %}
+  </div>
+  
+{% else %}
+  <!--내부 접속일 경우-->
+  <ul class="card-body"  style="list-style: none;"
+            >
     {% for table in tables %}
-      <li>{{table.0}}</li>
+      <li class="table-li">
+        {{table.0}}
+      </li>
     {% endfor %}
   </ul>
+{% endif %}
+
+<script>
+  
+  $(document).ready(function(){
+    //외부 접속시 스키마 클릭
+    
+    $(".connect-schema-btn").click(function(){
+        $(this).collapse('hide');
+        $.ajax({
+            type : "GET",
+            url : "/connect_schema/{{id}}/"+$(this).text(),
+            success : (response) => {
+              $("#schema-msg").empty();
+              if(response.error_msg != undefined){
+                $("#schema-msg").removeClass('alert-info');
+                $("#schema-msg").addClass('alert-danger');
+                $("#schema-msg").append(response.error_msg);
+
+              }else{
+                $("#schema-msg").removeClass('alert-danger');
+                $("#schema-msg").addClass('alert-info');
+                $("#schema-msg").append(response.msg);
+
+              }
+            }
+        });
+  });
+
+});
+
+</script>
+  

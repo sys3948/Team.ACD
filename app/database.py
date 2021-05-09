@@ -52,7 +52,7 @@ class Database():
     def get_cursor(self):
         return self.cur
     
-    def excuteOne(self, sql, args):
+    def excuteOne(self, sql, args=()):
         self.cur.execute(sql,args)
         return self.cur.fetchone()
     
