@@ -59,6 +59,7 @@ def connect_db(func):
             else:
                 user_db = Database(dbms=db_info[0],host=db_info[1],port = db_info[2],user = db_info[4],password=db_info[3],database = db_info[5])
             kwargs['user_db_obj'] = user_db
+            
             cur.close()                 
             return func(*args,**kwargs)
 

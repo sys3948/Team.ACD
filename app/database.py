@@ -18,7 +18,9 @@ class Database():
         self.oracle_defaults = {
             'user' : current_app.config.get('ORACLE_USER'),
             'password' : current_app.config.get('ORACLE_PW'),
-            'host' : current_app.config.get('DB_HOST') + ':' + current_app.config.get('ORACLE_PORT'),
+            'host' : current_app.config.get('DB_HOST'),
+            'port' : current_app.config.get('ORACLE_PORT'),
+            'database' : 'system'
         }
     
         #mysql, mariadb 연결
@@ -32,8 +34,12 @@ class Database():
         elif dbms == 'oracle':
             #kargs 값이 있으면 oracle_defaults values 덮어쓰게 된다
             self.oracle_defaults.update(kargs)
-            print(self.oracle_defaults)
-            self.conn = oracle.connect(*self.oracle_defaults.values())
+            self.conn = oracle.connect(
+                self.oracle_defaults.get('user'),
+                self.oracle_defaults.get('password'),
+                self.oracle_defaults.get('host') + ":" + str(self.oracle_defaults.get('port')),
+                encoding='UTF-8'
+            )
         else:
             raise Exception('dbms가 존재하지 않습니다.')
         

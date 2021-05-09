@@ -32,10 +32,10 @@ def main():
                                    from dbms_info \
                                    where user_id = %s \
                                    and inner_num = 1', (session.get('id'),))
+        dbms_desc = cur.excuteAll("desc dbms_info")
         cur.close()
 
-        print(out_dbms_info == True)
-        print(out_dbms_info)
+        print(dbms_desc)
     return render_template('main.html', email = email, out_dbms_info = out_dbms_info, \
                            inner_dbms_info = inner_dbms_info)
 

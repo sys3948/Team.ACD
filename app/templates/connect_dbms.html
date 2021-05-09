@@ -55,12 +55,16 @@
         <input type="submit" class="btn btn-primary" value="Connect" />
       </div>
     </form>
+    <div class="alert alert-danger" id="alert-block" style="display: none;">
+      <span id="alert-msg"></span>
+    </div>
   </div>
 
   <script>
     $(function(){
       document.getElementById('connect-form').onsubmit = (e) => {
         e.preventDefault();
+        document.getElementById('alert-block').style.display = 'none';
         const dbms = document.getElementById('dbms').value;
         const host = document.getElementById('host').value; // 필수
         const port = document.getElementById('port').value; // 필수
@@ -70,39 +74,36 @@
         const schema = document.getElementById('schema').value; // 필수
 
         if(host === ""){
-          alert('hostname이 입력되어 있지 않습니다. hostname을 입력해주세요.')
+          document.getElementById('alert-block').style.display = 'block';
+          document.getElementById('alert-msg').innerText = 'hostname이 입력되어 있지 않습니다. hostname을 입력해주세요.';
           return false;
-        }else{
-          
         }
 
         if(port === ""){
-          alert('port가 입력되어 있지 않습니다. port를 입력해주세요.')
+          document.getElementById('alert-block').style.display = 'block';
+          document.getElementById('alert-msg').innerText = 'port가 입력되어 있지 않습니다. port를 입력해주세요.';
           return false;
-        }else{
-          
         }
 
         if(user_id === ""){
-          alert('User ID가 입력되어 있지 않습니다. User ID를 입력해주세요.')
+          document.getElementById('alert-block').style.display = 'block';
+          document.getElementById('alert-msg').innerText = 'User ID가 입력되어 있지 않습니다. User ID를 입력해주세요.';
           return false;
-        }else{
-          
         }
 
         if(user_pw === ""){
-          alert('Password가 입력되어 있지 않습니다. Password를 입력해주세요.')
+          document.getElementById('alert-block').style.display = 'block';
+          document.getElementById('alert-msg').innerText = 'Password가 입력되어 있지 않습니다. Password를 입력해주세요.';
           return false;
-        }else{
-          
         }
 
         if(schema === ""){
-          alert('Schema가 입력되어 있지 않습니다. Schema를 입력해주세요.')
+          document.getElementById('alert-block').style.display = 'block';
+          document.getElementById('alert-msg').innerText = 'Schema가 입력되어 있지 않습니다. Schema를 입력해주세요.';
           return false;
-        }else{
-          
         }
+
+        // 비동기 통신.
 
       }
     });
