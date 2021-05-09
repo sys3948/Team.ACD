@@ -2,11 +2,12 @@
 # dbms 내/외부 접속, 쿼리 실행(전공자 & 비전공자) 페이지의 url을 라우팅하는 뷰함수 python module
 
 #from flask import ...
-from flask import current_app, render_template, request, session, url_for, redirect, jsonify
+from flask import current_app, flash, render_template, request, session, url_for, redirect, jsonify
 from . import dbide
 import mysql.connector as mysql
 from ..database import Database
 from ..decorate import login_check,connect_db
+from datetime import datetime
 import re
 import sqlparse
 
@@ -27,7 +28,7 @@ def main():
                                    from dbms_info \
                                    where user_id = %s \
                                    and inner_num = 0 \
-                                   order by stampdatetime', (session.get('id'),))
+                                   order by stampdatetime desc', (session.get('id'),))
         inner_dbms_info = cur.excuteAll('select db_id, dbms \
                                    from dbms_info \
                                    where user_id = %s \
@@ -41,10 +42,66 @@ def main():
 
 
 @login_check
-@dbide.route('/connect_dbms')
+@dbide.route('/connect_dbms', methods=['GET', 'POST'])
 def connect_dbms():
+    if request.method == 'POST':
+        dbms = request.form.get('dbms')
+        host = request.form.get('host')
+        port = request.form.get('port')
+        user_id = request.form.get('user_id')
+        user_pw = request.form.get('user_pw')
+        alias = request.form.get('alias')
+        schema = request.form.get('schema')
+
+        try:
+            if dbms == 'mysql' or dbms == 'maria':
+                cur = Database(host = host, user = user_id, password = user_pw, port = port, database = schema)
+                cur.close()
+            elif dbms == 'oracle':
+                cur = Database(host = host, user = user_id, password = user_pw, port = port, database = schema, dbms = dbms)
+                cur.close()
+            elif dbms == 'mongo':
+                pass
+
+            dbms_info_cur = Database()
+            dbms_info_cur.excute("insert into dbms_info(user_id, dbms, hostname, port_num, \
+                                      alias, dbms_connect_pw, dbms_connect_username, dbms_schema, \
+                                      inner_num, stampdatetime) \
+                                      value(%s, %s, %s, %s, %s, %s, %s, %s, 0, %s)", \
+                                      (session.get('id'), dbms, host, port, alias, \
+                                       user_pw, user_id, schema, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+            dbms_info_cur.commit()
+            dbms_info_cur.close()
+            return jsonify({'confirm':True})
+        except mysql.Error as e:
+            print(e)
+            # cur.close()
+            return jsonify({"confirm":False, "msg":str(e)})
     return render_template('connect_dbms.html')
 
+@login_check
+@dbide.route('/connect_dbms/edit', methods=['GET', 'POST'])
+def edit_dbms():
+    return render_template('edit_dbms.html')
+
+
+@login_check
+@dbide.route('/delete_dbms/<id>')
+def delete_dbms(id):
+    cur = Database()
+    confirm = cur.excuteOne("select db_id, user_id \
+                  from dbms_info \
+                  where db_id = %s and user_id = %s", (id, session.get('id')))
+
+    if not confirm:
+        flash('해당 계정에 존재하지 않는 DBMS 입니다.')
+    else:
+        cur.excute("delete from dbms_info \
+                    where db_id = %s", (id,))
+
+        cur.commit()
+        flash('DBMS 삭제를 성공 했습니다.')
+    return redirect(url_for('dbide.main'))
 
 
 
