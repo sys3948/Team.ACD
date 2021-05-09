@@ -31,10 +31,10 @@ def main():
                                    from dbms_info \
                                    where user_id = %s \
                                    and inner_num = 1', (session.get('id'),))
+        dbms_desc = cur.excuteAll("desc dbms_info")
         cur.close()
 
-        print(out_dbms_info == True)
-        print(out_dbms_info)
+        print(dbms_desc)
     return render_template('main.html', email = email, out_dbms_info = out_dbms_info, \
                            inner_dbms_info = inner_dbms_info)
 
@@ -87,7 +87,7 @@ def execute_query(id):
             print(results)
             
 
-            html = render_template('include/query_result.html',results=results,colums=colums,range=(0,len(colums)))
+            html = render_template('include/query_result.html',results=results,colums=colums,range=range(0,len(colums)))
             
             return jsonify({'html':html,'nav':nav})
         else:
@@ -95,14 +95,16 @@ def execute_query(id):
             try:
                 user_db.excute(last_query, ())
                 user_db.commit()
+                nav  = render_template('include/table_nav.html',tables=tables)
                 return jsonify({'msg':'쿼리실행 성공했습니다.','nav':nav})
             except Exception as e:
+                print(e)
                 return jsonify({'msg':'에러가 발생했습니다.','nav':nav})
 
-        user_db.close()
-        return render_template('execute_query.html',tables=tables,id=id)
     user_db.close()
-    return render_template('execute_query.html', id = id)
+    return render_template('execute_query.html',tables=tables,id=id)
+    # user_db.close()
+    # return render_template('execute_query.html',tables=tables , id = id)
 
 
 @login_check
