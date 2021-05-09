@@ -32,6 +32,7 @@ class Database():
         elif dbms == 'oracle':
             #kargs 값이 있으면 oracle_defaults values 덮어쓰게 된다
             self.oracle_defaults.update(kargs)
+            print(self.oracle_defaults)
             self.conn = oracle.connect(*self.oracle_defaults.values())
         else:
             raise Exception('dbms가 존재하지 않습니다.')

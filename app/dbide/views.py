@@ -6,8 +6,9 @@ from flask import current_app, render_template, request, session, url_for, redir
 from . import dbide
 import mysql.connector as mysql
 from ..database import Database
-from ..decorate import login_check
+from ..decorate import login_check,connect_db
 import re
+import sqlparse
 
 @dbide.route('/')
 @dbide.route('/main')
@@ -46,63 +47,54 @@ def connect_dbms():
 
 
 
+
 @login_check
-@dbide.route('/execute_query/<id>',methods=['GET','POST'])
-def execute_query(id):
-    cur = Database()
-    db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
-                             dbms_connect_username, dbms_schema \
-                             from dbms_info \
-                             where db_id = %s', (id,))
+@dbide.route('/execute_query/<id>')
+@connect_db
+def execute_query(id,user_db_obj):
+    '''
+        쿼리 실행화면
+    '''
+    tables = user_db_obj.excuteAll('show tables')
+    user_db_obj.close()
+    return render_template('execute_query.html',tables=tables,id=id)
+    
+@login_check
+@dbide.route('/execute_query_result/<id>',methods=['POST'])
+@connect_db
+def execute_query_result(id,user_db_obj):
+    '''
+        쿼리 비동기 처리후 결과 반환
+    '''
+    
+    query = request.form.get('query')
 
-    
-    
-    user_db = Database(dbms=db_info[0],host=db_info[1],port = db_info[2],user = db_info[4],password=db_info[3],database = db_info[5])
-    tables = user_db.excuteAll('show tables')
-    if request.method == "POST":
-        query = request.form.get('query')
-        last_query = query.split(';')[-2]
+    json = {}
+    msg_list = []
+    for sql in sqlparse.split(query):
+        try:
+            results = user_db_obj.excuteAll(sql,())
+            msg_list.append(f'{sql}<br>쿼리실행 성공')
+
+            #select문 경우 실행
+            if results:
+                columns = [col[0] for col in user_db_obj.get_cursor().description ]
+                json['results'] = render_template('include/query_result.html',results=results,columns=columns)
+            else:    
+                user_db_obj.commit()
+        except Exception as e:
+            print(e)
+            msg_list.append({'error_msg':f'{sql}<br>쿼리실행 실패<br>{e}'})
+            break
         
     
+    tables = user_db_obj.excuteAll('show tables')
+    user_db_obj.close()
 
-        
-        results = None
-        nav  = render_template('include/table_nav.html',tables=tables)
-        #select문일 경우
-        if re.compile(r'(SELECT|select)+.+(FROM|from)+.+').search(last_query):
-
-            results=user_db.excuteAll(last_query,())
-            
-            last_query = last_query.lower()
-            start_index = last_query.find('select') + len('select')
-            end_index = last_query.find('from')
-            table_name = last_query[end_index+len('from'):last_query.find('where')].strip() if last_query.find('where') != -1 else last_query[end_index+len('from'):].strip()
-            colums = last_query[start_index:end_index].strip()
-            
-            if colums == '*':
-                colums = [col[0] for col in user_db.get_cursor().description]
-                
-            else:
-                colums = [el.strip() for el in colums.split(',')]    
-            print(results)
-            
-
-            html = render_template('include/query_result.html',results=results,colums=colums,range=(0,len(colums)))
-            
-            return jsonify({'html':html,'nav':nav})
-        else:
-            
-            try:
-                user_db.excute(last_query, ())
-                user_db.commit()
-                return jsonify({'msg':'쿼리실행 성공했습니다.','nav':nav})
-            except Exception as e:
-                return jsonify({'msg':'에러가 발생했습니다.','nav':nav})
-
-        user_db.close()
-        return render_template('execute_query.html',tables=tables,id=id)
-    user_db.close()
-    return render_template('execute_query.html', id = id)
+    json['tables']   = render_template('include/table_nav.html',tables=tables)
+    json['msg_list'] = msg_list
+    return jsonify(json)
+    
 
 
 @login_check

@@ -40,5 +40,32 @@ def manager_check(func):
     return wrapper
 
 
+def connect_db(func):
+    '''
+    user_info 테이블 정보 조회후,
+    해당 정보로 db 연결
+    '''
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            cur = Database()
+            db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
+                             dbms_connect_username, dbms_schema \
+                             from dbms_info \
+                             where db_id = %s', (kwargs.get('id'),))
+            if db_info[0].lower() == 'oracle':
+                pass
+            else:
+                user_db = Database(dbms=db_info[0],host=db_info[1],port = db_info[2],user = db_info[4],password=db_info[3],database = db_info[5])
+            kwargs['user_db_obj'] = user_db
+            cur.close()                 
+            return func(*args,**kwargs)
+
+        except Exception as e:
+            raise e
+
+    return wrapper
+
 
 

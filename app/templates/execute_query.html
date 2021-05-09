@@ -12,15 +12,30 @@
       max-height: 30vh;
     }
   </style>
+  <!--include codemirror css-->
+  <link rel="stylesheet" href="http://codemirror.net/lib/codemirror.css">
+  <link rel="stylesheet" href="http://codemirror.net/addon/hint/show-hint.css">
 {% endblock %}
 
+{% block scriptblock %}
+<!--include codemirror js -->
+<script src="http://codemirror.net/lib/codemirror.js"></script>
+<script src="http://codemirror.net/addon/edit/matchbrackets.js"></script>
+<script src="http://codemirror.net/addon/edit/continuecomment.js"></script>
+<script src="http://codemirror.net/mode/sql/sql.js"></script>
+<script src="http://codemirror.net/addon/hint/show-hint.js"></script>
+<script src="http://codemirror.net/addon/hint/sql-hint.js"></script>
+{% endblock %}
+
+
 {% block header %}
-  {% include 'include/_header.html' %}
-  <div class="text-right">
-    <!--메뉴아이콘-->
-    <i class="fa fa-bars fa-2x" data-toggle="drawer" data-target="#drawer-1" aria-hidden="true"></i>
-  </div>
-  {% include 'include/drawers.html' %}
+    
+    {% include 'include/_header.html' %}
+    <div class="text-right">
+      <!--메뉴아이콘-->
+      <i class="fa fa-bars fa-2x" data-toggle="drawer" data-target="#drawer-1" aria-hidden="true"></i>
+    </div>
+    {% include 'include/drawers.html' %}
 {% endblock %}
 
 {% block main %}
@@ -39,7 +54,11 @@
           <a href="{{ url_for('dbide.execute_query_no_major', id=id) }}" class="btn btn-primary">비전공자</a>
         </div>
         <div class="container mt-3">
-          <div class="container border" id="edit" contenteditable="true" style="overflow: auto;"></div>
+          <!--<div class="container border" id="edit" contenteditable="true" style="overflow: auto;"></div>-->
+          <!--sql editor-->
+          <div class="border">
+            <textarea rows="4"  cols="50" id="edit"></textarea>
+          </div>
           
           <div class="mt-2 mb-2 text-right">
             <button type="button" class="btn btn-primary" id="result" dbms_info_id="{{id}}">결과</button>
@@ -47,9 +66,8 @@
           </div>
         </div>
       </div>
-      <div class="alert alert-info" style="display: none;">
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
-        <span id="alert-msg"></span>
+      <div id="alert-box" style="height: 200px; overflow-y: auto;">
+
       </div>
       <div id="query-result">
           {% include 'include/query_result.html' %}
@@ -58,37 +76,113 @@
     </div>
   </div>
 
-  <script>
-      $(function(){
-          // document.getElementById('result').onclick = (e) => {}
+<script>
 
-          $("#result").click(function(){
+$(function(){
+  // document.getElementById('result').onclick = (e) => {}
+});  
 
-             console.log(document.getElementById('edit').innerText)
-             
-              var content = $("#edit").text().replace("''", '');
-              console.log(content);
-              $.ajax({
-                type : "post",
-                url : "/execute_query/"+$(this).attr("dbms_info_id"),
-                data : {
-                  'query' : content,
-                },
-                success : (response) => {
-                   if(response.msg){
-                      $(".alert-info").show();
-                      $("#table-list").empty();
-                      $("#alert-msg").text(response.msg);
-                      $("#table-list").append(response.nav);
-                   }else{
-                    $("#table-list").empty();
-                    $("#query-result").empty();
-                    $("#query-result").append(response.html);
-                    $("#table-list").append(response.nav);
-                   }
-                }
-              });
-          });
-      })
-  </script>
+
+//에디터 초기화
+var editor = initSqlEditor();
+//자동완성 초기화
+initAutoComplete();
+
+$("#result").click(function(){
+
+  $.ajax({
+    type : "post",
+    url : "/execute_query_result/"+$(this).attr("dbms_info_id"),
+    data : {'query' : editor.getValue()},
+    success : (response) => {
+      $("#alert-box").empty();
+
+      for(var msg of response.msg_list){
+          console.log(msg);
+
+          if(msg.error_msg != undefined){
+             createMessage(msg.error_msg,'alert-danger');
+          }else{
+             createMessage(msg,'alert-info');
+          }
+      }
+
+      if(response.results != undefined){
+        updateResult(response.results,response.tables);
+      }
+      //테이블 자동완성 초기화
+      initAutoComplete();
+    
+    }
+  });
+});
+
+
+function createMessage(msg,class_name){
+  var alert = "";
+      alert += "<div class='alert "+class_name+"'>";
+      alert += "<button type='button' class='close' data-dismiss='alert'>&times;</button>";
+      alert += msg;
+      alert += "</div>";
+
+      $("#alert-box").append(alert);
+}
+
+//쿼리실행 결과 업데이트
+function updateResult(results,tables){
+  $("#table-list").empty();
+  $("#query-result").empty();
+
+  $("#query-result").append(results);
+  $("#table-list").append(tables);
+
+}
+
+function initSqlEditor(){
+  var editor = CodeMirror.fromTextArea(document.getElementById('edit'), {
+           autofocus: true,
+            extraKeys: {
+                "Tab": "autocomplete"
+            },
+            hint: CodeMirror.hint.sql,
+            lineNumbers: true,
+            mode: 'text/x-sql',
+            matchBrackets : true,
+            smartIndent: true,
+            lineWrapping: true,
+    });
+    editor.on('keyup', function(editor, event){
+            console.log(event.keyCode);
+            // enter,backspace,세미콜론,위아래 방향키 아니면 자동완성 
+            if(event.keyCode!=13 && event.keyCode != 8 && 
+              event.keyCode != 186 && event.keyCode!=38 && event.keyCode != 40 && event.keyCode != 32)
+              CodeMirror.commands.autocomplete(editor);
+    });
+
+    return editor;
+
+}
+
+
+
+function initAutoComplete() {
+  var tables = {}
+  $.each($("#table-list li"),function(idx,li){
+      tables[$(li).text()]=[];
+  });
+
+  CodeMirror.commands.autocomplete = function (cmeditor) {
+
+      CodeMirror.showHint(cmeditor, CodeMirror.hint.sql, {
+
+          completeSingle: false,
+          tables: tables
+      });
+  }
+}
+
+
+
+
+</script>
 {% endblock %}
