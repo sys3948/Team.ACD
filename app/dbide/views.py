@@ -33,18 +33,17 @@ def main():
                                    from dbms_info \
                                    where user_id = %s \
                                    and inner_num = 1', (session.get('id'),))
-        dbms_desc = cur.excuteAll("desc dbms_info")
         cur.close()
 
-        print(dbms_desc)
     return render_template('main.html', email = email, out_dbms_info = out_dbms_info, \
                            inner_dbms_info = inner_dbms_info)
 
 
 @login_check
 @dbide.route('/connect_dbms', methods=['GET', 'POST'])
-def connect_dbms():
-    if request.method == 'POST':
+@dbide.route('/connect_dbms/edit/<id>', methods=['GET', 'UPDATE'])
+def connect_edit_dbms(id=None):
+    if request.method == 'POST' or request.method == 'UPDATE':
         dbms = request.form.get('dbms')
         host = request.form.get('host')
         port = request.form.get('port')
@@ -64,12 +63,24 @@ def connect_dbms():
                 pass
 
             dbms_info_cur = Database()
-            dbms_info_cur.excute("insert into dbms_info(user_id, dbms, hostname, port_num, \
-                                      alias, dbms_connect_pw, dbms_connect_username, dbms_schema, \
-                                      inner_num, stampdatetime) \
-                                      value(%s, %s, %s, %s, %s, %s, %s, %s, 0, %s)", \
-                                      (session.get('id'), dbms, host, port, alias, \
-                                       user_pw, user_id, schema, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+            if id and request.method == 'UPDATE':
+                dbms_info_cur.excute("update dbms_info set \
+                                  dbms=%s, hostname=%s, port_num=%s, alias=%s, dbms_connect_pw=%s, \
+                                  dbms_connect_username=%s, dbms_schema=%s, stampdatetime=%s \
+                                  where db_id=%s", \
+                                  (dbms, host, port, alias, user_pw, \
+                                   user_id, schema, datetime.now().strftime('%Y-%m-%d %H:%M:%S'),\
+                                   id))
+            elif not id and request.method == 'POST':
+                dbms_info_cur.excute("insert into dbms_info(user_id, dbms, hostname, port_num, \
+                                        alias, dbms_connect_pw, dbms_connect_username, dbms_schema, \
+                                        inner_num, stampdatetime) \
+                                        value(%s, %s, %s, %s, %s, %s, %s, %s, 0, %s)", \
+                                        (session.get('id'), dbms, host, port, alias, \
+                                        user_pw, user_id, schema, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+            else:
+                flash('예상치 못 한 에러로 인해 메인페이지로 넘어갑니다.')
+                return redirect(url_for('dbide.main'))
             dbms_info_cur.commit()
             dbms_info_cur.close()
             return jsonify({'confirm':True})
@@ -77,12 +88,24 @@ def connect_dbms():
             print(e)
             # cur.close()
             return jsonify({"confirm":False, "msg":str(e)})
-    return render_template('connect_dbms.html')
 
-@login_check
-@dbide.route('/connect_dbms/edit', methods=['GET', 'POST'])
-def edit_dbms():
-    return render_template('edit_dbms.html')
+    dbms_info = None
+
+    if id:
+        cur = Database()
+        dbms_info = cur.excuteOne("select db_id, hostname, port_num, dbms, alias, \
+                   dbms_connect_username, dbms_connect_pw, \
+                   dbms_schema \
+                   from dbms_info \
+                   where db_id = %s and user_id = %s", \
+                   (id, session.get('id')))
+        cur.close()
+
+        if not dbms_info:
+            flash('정확하지 않는 정보로 인해 메인 페이지로 돌아갑니다.')
+            return redirect(url_for('dbide.main'))
+
+    return render_template('connect_edit_dbms.html', dbms_info = dbms_info)
 
 
 @login_check
@@ -201,24 +224,15 @@ def connect_schema(id,schema,dbms_info):
 @login_check
 @dbide.route('/execute_query_no_major/<id>')
 def execute_query_no_major(id):
-    # cur = Database()
-    # db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
-    #                          dbms_connect_username, dbms_schema \
-    #                          from dbms_info \
-    #                          where db_id = %s', (id,))
+    cur = Database()
+    db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
+                             dbms_connect_username, dbms_schema \
+                             from dbms_info \
+                             where db_id = %s and user_id=%s', (id, session.get('id')))
 
-    # if db_info[0] == 'mysql':
-    #     db_conn = mysql.connect(host = db_info[1], port = db_info[2], user = db_info[4], passwd = db_info[3], database = db_info[5])
-    # elif db_info[0] == 'maria':
-    #     pass
-    # elif db_info[0] == 'oracle':
-    #     pass
-    # elif db_info[0] == 'mongo':
-    #     pass
-
-    # db_cur = db_conn.cursor()
-    # db_cur.execute('show tables')
-    # t_info = db_cur.fetchone()
+    if not db_info:
+        flash('연결하려고 한 DBMS 정보는 사용자께서 소유하고 있지 않는 DBMS 입니다.')
+        return redirect(url_for('dbide.main'))
 
     return render_template('/no_major/main.html', id=id)
 

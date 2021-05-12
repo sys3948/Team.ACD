@@ -14,7 +14,7 @@
       {% if out_dbms_info %}
         <div class="d-flex justify-content-center mb-1 mt-2">
           {% for out_info in out_dbms_info[:3] %}
-            <a href="#" class="card col bg-light ml-2 mr-2 col-sm-3">
+            <a href="{{ url_for('dbide.execute_query', id=out_info[0])}}" class="card col bg-light ml-2 mr-2 col-sm-3">
               <div class="card-header">
                 <p>DBMS : <span>{{ out_info[1] }}</span></p>
                 <p>Alias : <span>{{ out_info[4] }}</span></p>
@@ -61,8 +61,7 @@
           <h3>외부 DBMS 목록</h3>
         </div>
         <div class="col-md-3 text-center">
-          <a class="btn btn-primary" href="{{ url_for('dbide.connect_dbms') }}">Connect</a>
-          <a class="btn btn-primary" href="{{ url_for('dbide.edit_dbms') }}">Edit</a>
+          <a class="btn btn-primary" href="{{ url_for('dbide.connect_edit_dbms') }}">Connect</a>
         </div>
       </div>
       <div class="container">
@@ -77,6 +76,7 @@
               <th>User</th>
               <th>Schema</th>
               <th>Connect Datetime</th>
+              <th></th>
               <th></th>
             </tr>
           </thead>
@@ -120,6 +120,9 @@
                   </td>
                   <td>
                     <a class="btn btn-danger" href="{{ url_for('dbide.delete_dbms', id=info[0]) }}">Delete</a>
+                  </td>
+                  <td>
+                    <a class="btn btn-info" href="{{ url_for('dbide.connect_edit_dbms', id=info[0]) }}">Edit</a>
                   </td>
                 </tr>
               {% endfor %}
