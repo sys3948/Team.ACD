@@ -41,7 +41,13 @@
 {% block main %}
   <div class="row container">
     <div class="col-md-4 border border-top-0 border-bottom-0 border-left-0 q-height">
-      <h2>테이블 리스트</h2>
+      <h2>
+          {% if db_info.0 == 'oracle' %}
+            tablespace 리스트
+          {% else %}
+            테이블 리스트
+          {% endif %}
+      </h2>
       <div id="table-list">
         {% include 'include/table_nav.html' %}
       </div>
@@ -55,10 +61,11 @@
         </div>
         <div class="container mt-3">
           <!--<div class="container border" id="edit" contenteditable="true" style="overflow: auto;"></div>-->
-          
-          <div class="alert alert-info" id="schema-msg">
-              데이터베이스 <b class="text-dark">{{dbms_schema}}</b>에 sql질의 실행
-          </div>
+          {% if db_info.0 != 'oracle' %}
+            <div class="alert alert-info" id="schema-msg">
+                데이터베이스 <b class="text-dark">{{db_info.5}}</b>에 sql질의 실행
+            </div>
+          {% endif %}
           <!--sql editor-->
           <div class="border">
             <textarea rows="4"  cols="50" id="edit"></textarea>
@@ -167,12 +174,34 @@ function initSqlEditor(){
     return editor;
 
 }
+//외부 접속시 스키마 클릭
+    
+$(".connect-schema-btn").click(function(){
+        $(this).collapse('hide');
+        $.ajax({
+            type : "GET",
+            url : "/connect_schema/{{id}}/"+$(this).text(),
+            success : (response) => {
+              $("#schema-msg").empty();
+              if(response.error_msg != undefined){
+                $("#schema-msg").removeClass('alert-info');
+                $("#schema-msg").addClass('alert-danger');
+                $("#schema-msg").append(response.error_msg);
 
+              }else{
+                $("#schema-msg").removeClass('alert-danger');
+                $("#schema-msg").addClass('alert-info');
+                $("#schema-msg").append(response.msg);
+
+              }
+            }
+        });
+  });
 
 
 function initAutoComplete() {
   var tables = {}
-  $.each($("#table-list li"),function(idx,li){
+  $.each($("#table-list li.table-li"),function(idx,li){
       tables[$(li).text()]=[];
   });
 

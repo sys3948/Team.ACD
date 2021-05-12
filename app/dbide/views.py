@@ -112,23 +112,17 @@ def execute_query(id,dbms_info):
     '''
         쿼리 실행화면
     '''
+    #사용자가 연결한 db object
     user_db = dbms_info.get('user_db')
+    #info_dbms테이블에 select 한 결과
     db_info = dbms_info.get('db_info')
-    #외부 접속 databases 목록 있다, 아니면 없다
     
-    databases = [db[0] for db in user_db.excuteAll('show databases') if db[0] != 'information_schema' ] if db_info[6] == 0 else None
-    if databases:
-        tables = {}
-        for db in databases:
-            print(user_db.excuteAll(f'show tables from {db}'))
-            tables[db] = user_db.excuteAll(f'show tables from {db}')
-        print(tables)
-    else:
-        tables = user_db.excuteAll('show tables')
+
+    databases,tables = user_db.show_databases_and_tables(db_info)    
 
     user_db.close()
     
-    return render_template('execute_query.html',tables=tables,id=id,databases=databases,dbms_schema=db_info[5])
+    return render_template('execute_query.html',tables=tables,id=id,databases=databases,db_info=db_info)
     
 @login_check
 @dbide.route('/execute_query_result/<id>',methods=['POST'])
@@ -144,15 +138,22 @@ def execute_query_result(id,dbms_info):
 
     json = {}
     msg_list = []
+    
     for sql in sqlparse.split(query):
         try:
-            results = user_db.excuteAll(sql,())
+            #오라클에서 세미콜론 있으면 에러발생
+            sql = sql.replace(';','')
+            results = user_db.excuteAll(sql)
+            
             msg_list.append(f'{sql}<br>쿼리실행 성공')
+            sql_type = sqlparse.parse(sql)[0].tokens[0].value.upper()
 
             #select문 경우 실행
-            if results:
+            if results or sql_type == 'SELECT':
+
                 columns = [col[0] for col in user_db.get_cursor().description ]
-                json['results'] = render_template('include/query_result.html',results=results,columns=columns)
+                print("execute_time: ",user_db.show_sql_execute_plain())
+                json['results'] = render_template('include/query_result.html',results=results,columns=columns,sql_type=sql_type)
             else:    
                 user_db.commit()
         except Exception as e:
@@ -160,18 +161,11 @@ def execute_query_result(id,dbms_info):
             msg_list.append({'error_msg':f'{sql}<br>쿼리실행 실패<br>{e}'})
             break
         
-    #외부 접속 databases 목록 있다, 아니면 없다
-    databases = [db[0] for db in user_db.excuteAll('show databases') if db[0] != 'information_schema' ] if db_info[6] == 0 else None
-    if databases:
-        tables = {}
-        for db in databases:
-            tables[db] = user_db.excuteAll(f'show tables from {db}')
-    else:
-        tables = user_db.excuteAll('show tables')
+    databases,tables = user_db.show_databases_and_tables(db_info)   
 
     user_db.close()
 
-    json['tables']   = render_template('include/table_nav.html',tables=tables,databases=databases,dbms_schema=db_info[5])
+    json['tables']   = render_template('include/table_nav.html',tables=tables,databases=databases,db_info=db_info)
     json['msg_list'] = msg_list
     return jsonify(json)
     
@@ -289,3 +283,9 @@ def execute_query_no_major_update(id):
 def execute_query_no_major_delete(id):
 
     return render_template('/no_major/delete.html', id=id)
+
+@dbide.route('/execute_test/')
+def excute_test():
+    db = Database()
+    print(db.excuteAll("explain format=tree select * from acd.user as u,acd.dbms_info as d where u.id=d.user_id order by u.id"))
+    return 'hihi'

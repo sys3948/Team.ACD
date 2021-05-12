@@ -6,6 +6,8 @@ import cx_Oracle as oracle
 
 class Database():
     def __init__(self,dbms='mysql',**kargs):
+
+        self.dbms = dbms
         #mysql, mariadb 용 설정
         self.defaults = {
             'host'     : current_app.config.get('DB_HOST'), 
@@ -29,6 +31,7 @@ class Database():
             #kargs 값이 있으면 defaults values 덮어쓰게 된다
             self.defaults.update(kargs)
             self.conn = mysql.connect(**self.defaults)
+            
 
         #오라클 연결    
         elif dbms == 'oracle':
@@ -44,9 +47,9 @@ class Database():
             raise Exception('dbms가 존재하지 않습니다.')
         
         self.cur = self.conn.cursor()
+        
     
-    
-    def excute(self, sql, args):
+    def excute(self, sql, args=()):
         self.cur.execute(sql,args)
     
     def get_cursor(self):
@@ -66,3 +69,32 @@ class Database():
     def close(self):
         self.cur.close()
         self.conn.close()
+    
+    
+    
+    def show_databases_and_tables(self,db_info):
+        '''
+            연결된 데이터베이스 스키마 및  테이블 조회
+            Args:
+                db_info : dbms_info테이블 fetchone()한 정보
+            Returns:
+                조회된 database와 table
+        '''
+        databases = None
+        if self.dbms == 'oracle':
+            tables = self.excuteAll(f"SELECT default_tablespace FROM user_users")
+        else:
+            databases = [db[0] for db in self.excuteAll('show databases') if db[0] != 'information_schema' ] if db_info[6] == 0 else None
+            #외부db 연결시
+            if databases:
+                tables = {}
+                for db in databases:
+                    tables[db] = self.excuteAll(f'show tables from {db}')
+            else:
+                tables = self.excuteAll('show tables')
+
+        return databases,tables        
+    
+
+
+

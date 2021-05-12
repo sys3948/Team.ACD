@@ -30,41 +30,9 @@
   <ul class="card-body"  style="list-style: none;"
             >
     {% for table in tables %}
-      <li class="table-li">
-        {{table.0}}
-      </li>
+      <li class="table-li">{{table.0}}</li>
     {% endfor %}
   </ul>
 {% endif %}
 
-<script>
-  
-  $(document).ready(function(){
-    //외부 접속시 스키마 클릭
-    
-    $(".connect-schema-btn").click(function(){
-        $(this).collapse('hide');
-        $.ajax({
-            type : "GET",
-            url : "/connect_schema/{{id}}/"+$(this).text(),
-            success : (response) => {
-              $("#schema-msg").empty();
-              if(response.error_msg != undefined){
-                $("#schema-msg").removeClass('alert-info');
-                $("#schema-msg").addClass('alert-danger');
-                $("#schema-msg").append(response.error_msg);
-
-              }else{
-                $("#schema-msg").removeClass('alert-danger');
-                $("#schema-msg").addClass('alert-info');
-                $("#schema-msg").append(response.msg);
-
-              }
-            }
-        });
-  });
-
-});
-
-</script>
   

@@ -7,12 +7,18 @@
       </tr>
     </thead>
     <tbody>
+        
+        {% if not results and sql_type=='SELECT' %}
+            <tr>
+                <td colspan="{{columns|length}}">no rows selected</td>
+            </tr>
+        {% endif %}
         {% for rows in results %}
-        <tr>
-            {% for row in rows %}
-                <td>{{row}}</td>
-            {% endfor %}
-        </tr>
+            <tr>
+                {% for row in rows %}
+                    <td>{{row}}</td>
+                {% endfor %}
+            </tr>
         {% endfor %}
     </tbody>
 </table>
