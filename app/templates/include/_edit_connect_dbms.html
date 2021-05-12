@@ -1,0 +1,44 @@
+<div class="container">
+  <h3 class="">Connect DBMS Edit</h3>
+  <form class="" id="connect-form">
+    <div class="input-block">
+      <div class="form-group">
+        <label for="dbms">DBMS :</label>
+        <select class="form-control" id="dbms">
+          <option value="oracle" {% if dbms_info[3] == 'oracle' %}selected{% endif %}>Oracle</option>
+          <option value="mysql" {% if dbms_info[3] == 'mysql' %}selected{% endif %}>MySQL</option>
+          <option value="maria" {% if dbms_info[3] == 'maria' %}selected{% endif %}>MariaDB</option>
+          <option value="mongo" {% if dbms_info[3] == 'mongo' %}selected{% endif %}>MongoDB</option>
+        </select>
+      </div>
+      <div class="form-group container">
+        <div class="row">
+          <input type="text" class="form-control col-md-8 mr-2" id="host" name="" value="{{dbms_info[1]}}" />
+          <input type="text" class="form-control col-md-3" id="port" name="" value="{{dbms_info[2]}}" />
+        </div>
+      </div>
+      <div class="form-group">
+        <input type="text" class="form-control" id="user-id" name="" value="{{dbms_info[5]}}" />
+      </div>
+      <div class="form-group">
+        <input type="password" class="form-control" id="user-pw" name="" value="{{dbms_info[6]}}" />
+      </div>
+      <div class="form-group">
+        <input type="text" class="form-control" id="alias" name=""  {% if dbms_info[4] %} value="{{dbms_info[4]}}" {% else %} placeholder="Alias" {% endif %} />
+      </div>
+      <div class="form-group">
+        <input type="text" class="form-control" id="schema" name="" {% if dbms_info[7] %} value="{{dbms_info[7]}}" {% else %} placeholder="Schema" {% endif %} />
+      </div>
+    </div>
+    <div class="container text-center">
+      <input type="submit" class="btn btn-primary" value="Connect" />
+    </div>
+  </form>
+  <div class="alert alert-danger" id="alert-block" style="display: none;">
+    <span id="alert-msg"></span>
+  </div>
+</div>
+<div id="spinner-box">
+  <h1 class="text-info">DBMS Connecting!</h1>
+  <div class="spinner-border text-info spinner-border-lg"></div>
+</div>

@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block stylesheet %}
+  {{ super() }}
+  <style>
+    .input-block{
+      max-width: 50%;
+    }
+    #spinner-box{
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: white;
+      text-align: center;
+      display: none;
+    }
+    .spinner-border{
+      width: 30rem;
+      height: 30rem;
+      font-size: 10rem;
+    }
+  </style>
+{% endblock %}
+
+{% block header %}
+  {% include 'include/_header.html' %}
+  <div class="text-right">
+    <!--메뉴아이콘-->
+    <i class="fa fa-bars fa-2x" data-toggle="drawer" data-target="#drawer-1" aria-hidden="true"></i>
+  </div>
+  {% include 'include/drawers.html' %}
+{% endblock %}
+
+{% block  main%}
+  {% if dbms_info %}
+    {% include 'include/_edit_connect_dbms.html' %}
+  {% else %}
+    {% include 'include/_connect_dbms.html' %}
+  {% endif %}
+
+  <script>
+    $(function(){
+      {% if dbms_info %}
+        const url = '{{url_for('dbide.connect_edit_dbms', id=dbms_info[0])}}';
+        const type = 'UPDATE';
+      {% else %}
+        const url = '{{url_for('dbide.connect_edit_dbms')}}';
+        const type = 'POST';
+      {% endif %}
+      console.log(url);
+      console.log(type);
+
+
+      document.getElementById('connect-form').onsubmit = (e) => {
+        e.preventDefault();
+        document.getElementById('alert-block').style.display = 'none';
+        const dbms = document.getElementById('dbms').value;
+        const host = document.getElementById('host').value; // 필수
+        const port = document.getElementById('port').value; // 필수
+        const user_id = document.getElementById('user-id').value; // 필수
+        const user_pw = document.getElementById('user-pw').value; // 필수
+        const alias = document.getElementById('alias').value;
+        const schema = document.getElementById('schema').value;
+
+        if(host === ""){
+          document.getElementById('alert-block').style.display = 'block';
+          document.getElementById('alert-msg').innerText = 'hostname이 입력되어 있지 않습니다. hostname을 입력해주세요.';
+          return false;
+        }
+
+        if(port === ""){
+          document.getElementById('alert-block').style.display = 'block';
+          document.getElementById('alert-msg').innerText = 'port가 입력되어 있지 않습니다. port를 입력해주세요.';
+          return false;
+        }
+
+        if(user_id === ""){
+          document.getElementById('alert-block').style.display = 'block';
+          document.getElementById('alert-msg').innerText = 'User ID가 입력되어 있지 않습니다. User ID를 입력해주세요.';
+          return false;
+        }
+
+        if(user_pw === ""){
+          document.getElementById('alert-block').style.display = 'block';
+          document.getElementById('alert-msg').innerText = 'Password가 입력되어 있지 않습니다. Password를 입력해주세요.';
+          return false;
+        }
+
+        // 비동기 통신.
+        document.getElementById('spinner-box').style.display='block';
+        $.ajax({
+          url : url,
+          type : type,
+          data : {
+            "dbms":dbms,
+            "host":host,
+            "port":port,
+            "user_id":user_id,
+            "user_pw":user_pw,
+            "alias":alias,
+            "schema":schema,
+          },
+          success : (response) => {
+            document.getElementById('spinner-box').style.display='none';
+            if(response.confirm){
+              location.replace('/')
+            } else {
+              document.getElementById('alert-block').style.display = 'block';
+              document.getElementById('alert-msg').innerText = response.msg;
+            }
+
+
+          }
+        })
+      }
+    });
+  </script>
+{% endblock %}
