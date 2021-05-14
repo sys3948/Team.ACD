@@ -94,8 +94,8 @@ def sign_up():
         oracle_cur = oracle_conn.cursor()
         oracle_cur.execute('create user ' + request.form.get('user_id') + ' identified by ' + request.form.get('user_pw'))
         oracle_cur.execute('grant create session, create table, create view, create sequence to ' + request.form.get('user_id'))
-        oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile '/ora/" + request.form.get('user_id') + ".dbf' size 10m")
-        # oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile 'C:/oraclexe/app/oracle/oradata/XE/" + request.form.get('user_id') + ".dbf' size 10m")
+        # oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile '/ora/" + request.form.get('user_id') + ".dbf' size 10m")
+        oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile 'C:/oraclexe/app/oracle/oradata/XE/" + request.form.get('user_id') + ".dbf' size 10m")
         oracle_cur.execute('alter user ' + request.form.get('user_id') + ' default tablespace ' + request.form.get('user_id'))
         oracle_cur.execute('alter user ' + request.form.get('user_id') + ' quota unlimited on ' + request.form.get('user_id'))
 

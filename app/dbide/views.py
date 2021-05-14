@@ -175,7 +175,7 @@ def execute_query_result(id,dbms_info):
             if results or sql_type == 'SELECT':
 
                 columns = [col[0] for col in user_db.get_cursor().description ]
-                print("execute_time: ",user_db.show_sql_execute_plain())
+                json['explain'] = user_db.excuteOne(f"explain format=json {sql}")
                 json['results'] = render_template('include/query_result.html',results=results,columns=columns,sql_type=sql_type)
             else:    
                 user_db.commit()
