@@ -1,111 +1,442 @@
 {% extends "/no_major/base.html" %}
 
+{% block stylesheet %}
+  {{ super() }}
+  <style>
+    input[type="checkbox"]{
+      width : 1.5rem;
+      height: 1.5rem;
+    }
+
+    .input-colum{
+      width: 200px;
+    }
+
+    .select{
+      width: 100px;
+    }
+
+    .colum-table{
+      overflow: visible;
+    }
+  </style>
+{% endblock %}
+
 {% block execute %}
   <div class="container">
     <h2>테이블 {{title}}</h2>
-    <form>
-      <div class="form-group">
-        <input type="text" class="form-control" placeholder="생성할 테이블의 이름을 작성해주세요.">
-      </div>
-      <div>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Column Name</th>
-              <th>Type</th>
-              <th>Not Null</th>
-              <th>Unique</th>
-              <th>Index</th>
-              <th>PK</th>
-              <th>Defaults</th>
-            </tr>
-          </thead>
-          <tbody>
-              <tr>
-                <td>
-                  <input class="form-control" type="text" value="" />
-                </td>
-                <td>
-                  <select class="form-control">
-                    <option>int</option>
-                  </select>
-                </td>
-                <td>
-                  <input type="checkbox" class="form-control" value="not_null" />
-                </td>
-                <td>
-                  <input type="checkbox" class="form-control" value="unique" />
-                </td>
-                <td>
-                  <input type="checkbox" class="form-control" value="index" />
-                </td>
-                <td>
-                  <input type="checkbox" class="form-control" value="pk" />
-                </td>
-                <td>
-                  <input type="text" class="form-control" value="" />
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <input class="form-control" type="text" value="" />
-                </td>
-                <td>
-                  <select class="form-control">
-                    <option>int</option>
-                  </select>
-                </td>
-                <td>
-                  <input type="checkbox" class="form-control" value="not_null" />
-                </td>
-                <td>
-                  <input type="checkbox" class="form-control" value="unique" />
-                </td>
-                <td>
-                  <input type="checkbox" class="form-control" value="index" />
-                </td>
-                <td>
-                  <input type="checkbox" class="form-control" value="pk" />
-                </td>
-                <td>
-                  <input type="text" class="form-control" value="" />
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <input class="form-control" type="text" value="" />
-                </td>
-                <td>
-                  <select class="form-control">
-                    <option>int</option>
-                  </select>
-                </td>
-                <td>
-                  <input type="checkbox" class="form-control" value="not_null" />
-                </td>
-                <td>
-                  <input type="checkbox" class="form-control" value="unique" />
-                </td>
-                <td>
-                  <input type="checkbox" class="form-control" value="index" />
-                </td>
-                <td>
-                  <input type="checkbox" class="form-control" value="pk" />
-                </td>
-                <td>
-                  <input type="text" class="form-control" value="" />
-                </td>
-              </tr>
-          </tbody>
-        </table>
-          <div class="form-group text-center">
-            <button type="button" class="btn btn-primary">+</button>
-            <button type="button" class="btn btn-danger">-</button>
-          </div>
-      </div>
-      <div class="form-group text-center">
-        <input type="submit" class="btn btn-primary" value="create table" />
-      </div>
+    <form id="create-table-form">
+      {% if title == '생성' %}
+        {% include '/no_major/include/_create_table.html' %}
+      {% else %}
+        {% include '/no_major/include/_alter_table.html' %}
+      {% endif %}
     </form>
+    <div class="alert alert-danger" id="alert-block" style="display: none;">
+      <span id="alert-msg"></span>
+    </div>
   </div>
+  <script>
+    $(function(){
+      document.getElementById('row-plus').onclick = (e) => {
+        // 행 추가하는 이벤트 함수
+        let body = document.getElementById('column-table-body');
+        let row = body.insertRow(body.rows.length);
+        let cel0 = row.insertCell(0);
+        let cel1 = row.insertCell(1);
+        let cel2 = row.insertCell(2);
+        let cel3 = row.insertCell(3);
+        let cel4 = row.insertCell(4);
+        let cel5 = row.insertCell(5);
+        let cel6 = row.insertCell(6);
+
+        cel0.innerHTML = '<input class="form-control input-colum column-name" type="text" placeholder="이름을 입력해주세요." value="" />';
+        {% if db_info[0] == 'mysql' or db_info[0] == maria %}
+          cel1.innerHTML =  '<div class="form-group select">' +
+                              '<select class="form-control column-type">' +
+                                '<option value="tinyint">tinyint</option>' +
+                                '<option value="int">int</option>' +
+                                '<option value="float">float</option>' +
+                                '<option value="varchar">varchar</option>' +
+                                '<option value="text">Text</option>' +
+                                '<option value="datetime">datetime</option>' +
+                              '</select>' +
+                            '</div>';
+        {% elif db_info[0] == 'oracle' %}
+          cel1.innerHTML =  '<div class="form-group select">' +
+                              '<select class="form-control column-type">' +
+                                '<option value="number">number</option>' +
+                                '<option value="float">float</option>' +
+                                '<option value="varchar2">varchar2</option>' +
+                                '<option value="clob">clob(text)</option>' +
+                                '<option value="date">date</option>' +
+                              '</select>' +
+                            '</div>';
+        {% endif %}
+        cel2.innerHTML = '<input class="form-control input-colum column-type-length" type="text" placeholder="타입 길이값을 입력해주세요." value="" />';
+        cel3.innerHTML = '<input type="checkbox" class="form-control column-not-null" value="not null" />';
+        cel4.innerHTML = '<input type="checkbox" class="form-control column-unique" value="unique" />';
+        cel5.innerHTML = '<input type="checkbox" class="form-control column-pk" value="primary key" />';
+        cel6.innerHTML = '<input type="text" class="form-control input-colum column-default-value" value="" />';
+      };
+
+      document.getElementById('row-sub').onclick = (e) => {
+        // 행 삭제하는 이벤트 함수
+        let body = document.getElementById('column-table-body');
+        if(body.rows.length < 1) return false;
+        body.deleteRow(body.rows.length-1);
+      };
+
+      document.getElementById('create-table-form').onsubmit = (e) => {
+        // 쿼리 작성하여 서버에 전송하는 Submit 이벤트 메소드.
+        e.preventDefault();
+        document.getElementById('alert-block').style.display = 'none';
+        const body = document.getElementById('column-table-body');
+
+        let create_query = 'create table ';
+        {% if db_info[0] == 'mysql' or db_info[0] == 'maria' %}
+          let pk_query = 'primary key('; // mysql 과 mariadb의 primary key 작성 query
+        {% elif db_info[0] == 'oracle' %}
+          let pk_query = 'constraint '+ document.getElementById('table-name').value +'_pk primary key('; // oralce primary key 작성 query
+        {% endif %}
+
+        if(document.getElementById('table-name').value === ''){
+          document.getElementById('alert-block').style.display='block';
+          document.getElementById('alert-msg').innerText = 'Table 이름을 입력하지 않았습니다. 이름을 입력해주세요.';
+          return false;
+        }
+
+        create_query += document.getElementById('table-name').value + "(";
+
+        for(var i = 0; i < body.rows.length; i++){
+
+          if(document.getElementsByClassName('column-name')[i].value === ''){
+            document.getElementById('alert-block').style.display='block';
+            document.getElementById('alert-msg').innerText = (i+1) + '번째 행의 Column 이름을 입력하지 않았습니다. Column 이름을 입력해주세요.';
+            return false;
+          }
+
+          create_query += document.getElementsByClassName('column-name')[i].value + ' ' 
+                          + document.getElementsByClassName('column-type')[i].value;
+
+
+          // 우선 출력 결과를 확인한 후에 타입 길이의 출력은
+          // 타입 값에 따라 없어도 되고 꼭 존재하는 것으로 수정작업하기.
+
+          if(document.getElementsByClassName('column-type')[i].value === 'text' || 
+             document.getElementsByClassName('column-type')[i].value === 'datetime' ||
+             document.getElementsByClassName('column-type')[i].value === 'clob' ||
+             document.getElementsByClassName('column-type')[i].value === 'date'){
+
+          }else{
+            if(document.getElementsByClassName('column-type')[i].value === 'varchar' ||
+               document.getElementsByClassName('column-type')[i].value === 'varchar2'){
+                  if(document.getElementsByClassName('column-type-length')[i].value === ''){
+                    document.getElementById('alert-block').style.display='block';
+                    document.getElementById('alert-msg').innerText = i + '번째 행의 Type 길이를 입력하지 않았습니다. 길이를 입력해주세요.';
+                    return false;
+                  }
+                  create_query += "(" + document.getElementsByClassName('column-type-length')[i].value + ")";
+            }else{
+              if(document.getElementsByClassName('column-type-length')[i].value !== ''){
+                create_query += "(" + document.getElementsByClassName('column-type-length')[i].value + ")";
+              }
+            }
+          }
+
+
+          if(document.getElementsByClassName('column-not-null')[i].checked){
+            // not null checked
+            create_query += " " + document.getElementsByClassName('column-not-null')[i].value;
+          }
+
+          if(document.getElementsByClassName('column-unique')[i].checked){
+            // unique checked
+            create_query += " " + document.getElementsByClassName('column-unique')[i].value;
+          }
+
+          if(document.getElementsByClassName('column-pk')[i].checked){
+            // primary key checked
+            if(i > 0){
+              if(pk_query.split(',').length === 1){
+                pk_query += document.getElementsByClassName('column-name')[i].value;
+              }else{
+                pk_query += ',' + document.getElementsByClassName('column-name')[i].value;  
+              }
+            }else{
+              pk_query += document.getElementsByClassName('column-name')[i].value;
+            }
+          }
+
+          if(document.getElementsByClassName('column-default-value')[i].value !== ''){
+            // default value checked
+            create_query += " default " + document.getElementsByClassName('column-default-value')[i].value;
+          }
+
+          if(body.rows.length > 1 && i !== body.rows.length-1){
+            create_query += ',';
+          }
+        }
+
+        pk_query += ')';
+
+        if(pk_query.split('(')[1] == ')'){
+          create_query += ')';
+        }else{
+          create_query += "," + pk_query + ')';
+        }
+
+        console.log("Write Query is : " + create_query);
+
+        // ajax로 데이터 전송하기.
+
+        $.ajax({
+          url : location.pathname,
+          type : 'post',
+          data : {'query' : create_query},
+          success : (response) => {
+            // document.getElementById();
+            if(response.confirm){
+              location.replace('/execute_query_no_major/'+location.pathname.split('/')[location.pathname.split('/').length - 1]);
+            } else {
+              document.getElementById('alert-block').style.display = 'block';
+              document.getElementById('alert-msg').innerText = response.msg;
+            }
+          }
+        });
+      }
+
+    });
+
+    const alter_table_event = (e) => {
+      $.ajax({
+        url : location.pathname,
+        type : 'post',
+        data : {'table_name' : document.getElementById('table-name').value},
+        success : (response) => {
+          if(response.confirm){
+            let body = document.getElementById('column-table-body');
+            body.innerHTML="";
+            let table_info = response.table_info.replace("[[", "").replace("]]", "");
+            table_info = table_info.replaceAll("], [", "//");
+            table_info.split("//").forEach(element => {
+              let column_name;
+              let type;
+              let type_length;
+              let null_able = false;
+              let pk_able = false;
+              let unique_able = false;
+              let row = body.insertRow(body.rows.length);
+              let cel0 = row.insertCell(0);
+              let cel1 = row.insertCell(1);
+              let cel2 = row.insertCell(2);
+              let cel3 = row.insertCell(3);
+              let cel4 = row.insertCell(4);
+              let cel5 = row.insertCell(5);
+              let cel6 = row.insertCell(6);
+              if(response.dbms === 'mysql' || response.dbms === 'maria'){
+                column_name = element.split(",")[0].replaceAll("'","");
+                if(element.split(",")[1].includes("(")){
+                  type = element.split(",")[1].replace("b", "").replace("(", ".").replace(")","").split(".")[0].replaceAll("'","").replaceAll(" ", "");
+                  type_length = element.split(",")[1].replace("b", "").replace("(", ".").replace(")","").replaceAll("'", "").split(".")[1];
+                } else{
+                  type = element.split(",")[1].replace("b", "").replaceAll("'","").replaceAll(" ", "");
+                  type_length = false;
+                }
+                if(element.split(",")[2].replaceAll("'", "").replaceAll(" ", "") === "YES"){
+                  null_able = false;
+                } else {
+                  null_able = true;
+                }
+                if(!element.split(",")[3].replaceAll("'", "").replaceAll(" ", "")){
+                  // pk & unique를 설정 하지 않을 경우.
+                  pk_able = false;
+                  unique_able = false;
+                } else{
+                  // pk & unique를 설정할 경우
+                  if(element.split(",")[3].replaceAll("'", "").replaceAll(" ", "") === 'PRI'){
+                    pk_able = true;
+                  }
+                  if(element.split(",")[3].replaceAll("'", "").replaceAll(" ", "") === 'UNI'){
+                    unique_able = true;
+                  }
+                }
+
+                if(type === 'tinyint'){
+                  cel1.innerHTML =  '<div class="form-group select">' +
+                                      '<select class="form-control column-type">' +
+                                        '<option value="tinyint" selected>tinyint</option>' +
+                                        '<option value="int">int</option>' +
+                                        '<option value="float">float</option>' +
+                                        '<option value="varchar">varchar</option>' +
+                                        '<option value="text">Text</option>' +
+                                        '<option value="datetime">datetime</option>' +
+                                      '</select>' +
+                                    '</div>';
+                }
+                if(type === 'int'){
+                  cel1.innerHTML =  '<div class="form-group select">' +
+                                      '<select class="form-control column-type">' +
+                                        '<option value="tinyint">tinyint</option>' +
+                                        '<option value="int" selected>int</option>' +
+                                        '<option value="float">float</option>' +
+                                        '<option value="varchar">varchar</option>' +
+                                        '<option value="text">Text</option>' +
+                                        '<option value="datetime">datetime</option>' +
+                                      '</select>' +
+                                    '</div>';
+                }
+                if(type === 'float'){
+                  cel1.innerHTML =  '<div class="form-group select">' +
+                                      '<select class="form-control column-type">' +
+                                        '<option value="tinyint">tinyint</option>' +
+                                        '<option value="int">int</option>' +
+                                        '<option value="float" selected>float</option>' +
+                                        '<option value="varchar">varchar</option>' +
+                                        '<option value="text">Text</option>' +
+                                        '<option value="datetime">datetime</option>' +
+                                      '</select>' +
+                                    '</div>';
+                }
+                if(type === 'varchar'){
+                  cel1.innerHTML =  '<div class="form-group select">' +
+                                      '<select class="form-control column-type">' +
+                                        '<option value="tinyint">tinyint</option>' +
+                                        '<option value="int">int</option>' +
+                                        '<option value="float">float</option>' +
+                                        '<option value="varchar" selected>varchar</option>' +
+                                        '<option value="text">Text</option>' +
+                                        '<option value="datetime">datetime</option>' +
+                                      '</select>' +
+                                    '</div>';
+                }
+                if(type === 'text'){
+                  cel1.innerHTML =  '<div class="form-group select">' +
+                                      '<select class="form-control column-type">' +
+                                        '<option value="tinyint">tinyint</option>' +
+                                        '<option value="int">int</option>' +
+                                        '<option value="float">float</option>' +
+                                        '<option value="varchar">varchar</option>' +
+                                        '<option value="text" selected>Text</option>' +
+                                        '<option value="datetime">datetime</option>' +
+                                      '</select>' +
+                                    '</div>';
+                }
+                if(type === 'datetime'){
+                  cel1.innerHTML =  '<div class="form-group select">' +
+                                      '<select class="form-control column-type">' +
+                                        '<option value="tinyint">tinyint</option>' +
+                                        '<option value="int">int</option>' +
+                                        '<option value="float">float</option>' +
+                                        '<option value="varchar">varchar</option>' +
+                                        '<option value="text">Text</option>' +
+                                        '<option value="datetime" selected>datetime</option>' +
+                                      '</select>' +
+                                    '</div>';
+                }
+                
+              }
+
+              if(response.dbms === 'oracle'){
+                column_name = element.split(',')[0].replaceAll("'", "").replaceAll(" ", "").toLowerCase();
+                type = element.split(',')[1].replaceAll("'", "").replaceAll(" ", "").toLowerCase()
+                type_length = element.split(',')[2].replaceAll("'", "").replaceAll(" ", "").toLowerCase();
+                if(element.split(',')[3].replaceAll("'", "").replaceAll(" ", "").toLowerCase() === 'notnull'){
+                  null_able = true;
+                }
+                if(element.split(',')[3].replaceAll("'", "").replaceAll(" ", "").toLowerCase() === 'null'){
+                  null_able = false;
+                }
+                if(type === 'number'){
+                  cel1.innerHTML =  '<div class="form-group select">' +
+                                      '<select class="form-control column-type">' +
+                                        '<option value="number" selected>number</option>' +
+                                        '<option value="float">float</option>' +
+                                        '<option value="varchar2">varchar2</option>' +
+                                        '<option value="clob">clob(text)</option>' +
+                                        '<option value="date">date</option>' +
+                                      '</select>' +
+                                    '</div>';
+                }
+                if(type === 'float'){
+                  cel1.innerHTML =  '<div class="form-group select">' +
+                                      '<select class="form-control column-type">' +
+                                        '<option value="number">number</option>' +
+                                        '<option value="float" selected>float</option>' +
+                                        '<option value="varchar2">varchar2</option>' +
+                                        '<option value="clob">clob(text)</option>' +
+                                        '<option value="date">date</option>' +
+                                      '</select>' +
+                                    '</div>';
+                }
+                if(type === 'varchar2'){
+                  cel1.innerHTML =  '<div class="form-group select">' +
+                                      '<select class="form-control column-type">' +
+                                        '<option value="number">number</option>' +
+                                        '<option value="float">float</option>' +
+                                        '<option value="varchar2" selected>varchar2</option>' +
+                                        '<option value="clob">clob(text)</option>' +
+                                        '<option value="date">date</option>' +
+                                      '</select>' +
+                                    '</div>';
+                }
+                if(type === 'clob'){
+                  cel1.innerHTML =  '<div class="form-group select">' +
+                                      '<select class="form-control column-type">' +
+                                        '<option value="number">number</option>' +
+                                        '<option value="float">float</option>' +
+                                        '<option value="varchar2">varchar2</option>' +
+                                        '<option value="clob" selected>clob(text)</option>' +
+                                        '<option value="date">date</option>' +
+                                      '</select>' +
+                                    '</div>';
+                }
+                if(type === 'date'){
+                  cel1.innerHTML =  '<div class="form-group select">' +
+                                      '<select class="form-control column-type">' +
+                                        '<option value="number">number</option>' +
+                                        '<option value="float">float</option>' +
+                                        '<option value="varchar2">varchar2</option>' +
+                                        '<option value="clob">clob(text)</option>' +
+                                        '<option value="date" selected>date</option>' +
+                                      '</select>' +
+                                    '</div>';
+                }
+              }
+
+              cel0.innerHTML = '<input class="form-control input-colum column-name" type="text" placeholder="이름을 입력해주세요." value='+ column_name +' />';
+              if(type_length){
+                cel2.innerHTML = '<input class="form-control input-colum column-type-length" type="text" placeholder="타입 길이값을 입력해주세요." value="'+ type_length +'" />';
+              }else{
+                cel2.innerHTML = '<input class="form-control input-colum column-type-length" type="text" placeholder="타입 길이값을 입력해주세요." value="" />';
+              }
+
+              if(null_able){
+                cel3.innerHTML = '<input type="checkbox" class="form-control column-not-null" value="not null" checked />';
+              } else{
+                cel3.innerHTML = '<input type="checkbox" class="form-control column-not-null" value="not null" />';
+              }
+
+              if(unique_able){
+                cel4.innerHTML = '<input type="checkbox" class="form-control column-unique" value="unique" checked />';
+              } else {
+                cel4.innerHTML = '<input type="checkbox" class="form-control column-unique" value="unique" />';
+              }
+
+              if(pk_able){
+                cel5.innerHTML = '<input type="checkbox" class="form-control column-pk" value="primary key" checked />';
+              }else{
+                cel5.innerHTML = '<input type="checkbox" class="form-control column-pk" value="primary key" />';
+              }
+              cel6.innerHTML = '<input type="text" class="form-control input-colum column-default-value" placeholder="default 값 입력" value="" />';
+            });
+            document.getElementById('table').style.display = 'block';
+          }else{
+            document.getElementById('alert-block').style.display = 'block';
+            document.getElementById('alert-msg').innerText = response.msg;
+          }
+        }
+      })
+    }
+  </script>
 {% endblock %}

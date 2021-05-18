@@ -1,0 +1,67 @@
+<div class="form-group">
+  <input type="text" id="table-name" class="form-control" placeholder="생성할 테이블의 이름을 작성해주세요.">
+</div>
+<div>
+  <table class="table column-table">
+    <thead>
+      <tr>
+        <th>Column Name</th>
+        <th>Type</th>
+        <th>Type 길이 값</th>
+        <th>Not Null</th>
+        <th>Unique</th>
+        <th>PK</th>
+        <th>Defaults</th>
+      </tr>
+    </thead>
+    <tbody id="column-table-body">
+      <tr>
+        <td>
+          <input class="form-control input-colum column-name" type="text" placeholder="이름을 입력." value="" />
+        </td>
+        <td>
+          <div class="form-group select">
+            <select class="form-control column-type">
+              {% if db_info[0] == 'mysql' or db_info[0] == maria %}
+                <option value="tinyint">tinyint</option>
+                <option value="int">int</option>
+                <option value="float">float</option>
+                <option value="varchar">varchar</option>
+                <option value="text">Text</option>
+                <option value="datetime">datetime</option>
+              {% elif db_info[0] == 'oracle' %}
+                <option value="number">number</option>
+                <option value="float">float</option>
+                <option value="varchar2">varchar2</option>
+                <option value="clob">clob(text)</option>
+                <option value="date">date</option>
+              {% endif %}
+            </select>
+          </div>
+        </td>
+        <td>
+          <input class="form-control input-colum column-type-length" type="text" placeholder="타입 길이값 입력." value="" />
+        </td>
+        <td>
+          <input type="checkbox" class="form-control column-not-null" value="not null" />
+        </td>
+        <td>
+          <input type="checkbox" class="form-control column-unique" value="unique" />
+        </td>
+        <td>
+          <input type="checkbox" class="form-control column-pk" value="primary key" />
+        </td>
+        <td>
+          <input type="text" class="form-control input-colum column-default-value" placeholder="default 값 입력" value="" />
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="form-group text-center">
+    <button type="button" class="btn btn-primary" id="row-plus">+</button>
+    <button type="button" class="btn btn-danger" id="row-sub">-</button>
+  </div>
+</div>
+<div class="form-group text-center">
+  <input type="submit" class="btn btn-primary" value="create table" />
+</div>
