@@ -3,17 +3,43 @@
 {% block execute %}
   <div class="container">
     <h2>{{title}} 삭제</h2>
-    <form>
+    <form id="drop-form" method="post" action="">
       <div class="form-group">
-        <select class="form-control" id="dbms">
-          <option>DBMS</option>
-          <option>Oracle</option>
-          <option>MySQL</option>
+        <select class="form-control" id="db_info" name="drop_info">
+          <option value="">삭제할 {{title}}을 선택해주세요.</option>
+          {% if title == '테이블' %}
+            {% for table in t_list %}
+              <option value="{{table[0]}}">{{table[0]}}</option>
+            {% endfor %}
+          {% elif title == '데이터베이스' %}
+            <option>DBMS</option>
+            <option>Oracle</option>
+            <option>MySQL</option>
+          {% endif %}
         </select>
       </div>
       <div class="form-group text-center">
         <input type="submit" class="btn btn-primary" value="Drop" />
       </div>
     </form>
+    <div class="alert alert-danger" id="alert-block" style="display: none;">
+      <span id="alert-msg"></span>
+    </div>
   </div>
+  <script>
+    $(function(){
+      document.getElementById('drop-form').onsubmit = (e) =>{
+        e.preventDefault();
+        document.getElementById('alert-block').style.display = 'none';
+        document.getElementById('alert-msg').innerText = "";
+        if(document.getElementById('db_info').value == ''){
+          document.getElementById('alert-block').style.display = 'block';
+          document.getElementById('alert-msg').innerText = "삭제할 테이블을 선택해주세요.";
+          return false;
+        }
+
+        e.target.submit();
+      }
+    });
+  </script>
 {% endblock %}

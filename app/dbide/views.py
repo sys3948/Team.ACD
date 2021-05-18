@@ -2,7 +2,7 @@
 # dbms 내/외부 접속, 쿼리 실행(전공자 & 비전공자) 페이지의 url을 라우팅하는 뷰함수 python module
 
 #from flask import ...
-from flask import current_app, flash, render_template, request, session, url_for, redirect, jsonify,Response,stream_with_context
+from flask import current_app, flash, json, render_template, request, session, url_for, redirect, jsonify
 from . import dbide
 from .. import socketio
 from flask_socketio import emit,disconnect
@@ -243,7 +243,7 @@ def connect_schema(id,schema,dbms_info):
 def execute_query_no_major(id):
     cur = Database()
     db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
-                             dbms_connect_username, dbms_schema \
+                             dbms_connect_username, dbms_schema, inner_num \
                              from dbms_info \
                              where db_id = %s and user_id=%s', (id, session.get('id')))
 
@@ -251,42 +251,178 @@ def execute_query_no_major(id):
         flash('연결하려고 한 DBMS 정보는 사용자께서 소유하고 있지 않는 DBMS 입니다.')
         return redirect(url_for('dbide.main'))
 
-    return render_template('/no_major/main.html', id=id)
+    cur.close()
+
+    user_db = Database(dbms = db_info[0], host = db_info[1], port = db_info[2], user = db_info[4], \
+                       password = db_info[3], database = db_info[5])
+
+    databases, tables = user_db.show_databases_and_tables(db_info)
+
+    user_db.close()
+
+    return render_template('/no_major/main.html', id=id, databases=databases, tables=tables, db_info = db_info)
 
 
 @login_check
 @dbide.route('/execute_query_no_major/create_db/<id>')
 def execute_query_no_major_create_db(id):
+    cur = Database()
+    db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
+                             dbms_connect_username, dbms_schema, inner_num \
+                             from dbms_info \
+                             where db_id = %s and user_id=%s', (id, session.get('id')))
 
-    return render_template('/no_major/create_db.html', id=id)
+    if not db_info:
+        flash('연결하려고 한 DBMS 정보는 사용자께서 소유하고 있지 않는 DBMS 입니다.')
+        return redirect(url_for('dbide.main'))
+
+    cur.close()
+    return render_template('/no_major/create_db.html', id=id, db_info = db_info)
 
 
 @login_check
 @dbide.route('/execute_query_no_major/drop_db/<id>')
 def execute_query_no_major_drop_db(id):
     title = '데이터베이스'
-    return render_template('/no_major/drop_db.html', id=id, title = title)
+    cur = Database()
+    db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
+                             dbms_connect_username, dbms_schema, inner_num \
+                             from dbms_info \
+                             where db_id = %s and user_id=%s', (id, session.get('id')))
+
+    if not db_info:
+        flash('연결하려고 한 DBMS 정보는 사용자께서 소유하고 있지 않는 DBMS 입니다.')
+        return redirect(url_for('dbide.main'))
+
+    cur.close()
+    return render_template('/no_major/drop_db.html', id=id, title = title, db_info = db_info)
 
 
 @login_check
-@dbide.route('/execute_query_no_major/create_table/<id>')
+@dbide.route('/execute_query_no_major/create_table/<id>', methods = ['GET', 'POST'])
 def execute_query_no_major_create_table(id):
     title = '생성'
-    return render_template('/no_major/create_table.html', id=id, title = title)
+    cur = Database()
+    db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
+                             dbms_connect_username, dbms_schema, inner_num \
+                             from dbms_info \
+                             where db_id = %s and user_id=%s', (id, session.get('id')))
+
+    if not db_info:
+        flash('연결하려고 한 DBMS 정보는 사용자께서 소유하고 있지 않는 DBMS 입니다.')
+        return redirect(url_for('dbide.main'))
+
+    cur.close()
+
+    user_db = Database(dbms = db_info[0], host = db_info[1], port = db_info[2], user = db_info[4], \
+                       password = db_info[3], database = db_info[5])
+
+
+    if request.method == 'POST':
+        try:
+            user_db.excute(request.form.get('query'))
+            user_db.commit()
+            flash('Table 생성을 성공했습니다.')
+            user_db.close()
+            return jsonify({"confirm":True})
+        except Exception as e:
+            user_db.close()
+            return jsonify({"confirm" : False, "msg" : str(e)})
+
+    databases, tables = user_db.show_databases_and_tables(db_info)
+    user_db.close()
+    return render_template('/no_major/create_table.html', id=id, title = title, databases=databases, tables = tables, db_info=db_info)
 
 
 @login_check
-@dbide.route('/execute_query_no_major/alter_table/<id>')
+@dbide.route('/execute_query_no_major/alter_table/<id>', methods=['GET', 'POST'])
 def execute_query_no_major_alter_table(id):
     title = '수정'
-    return render_template('/no_major/create_table.html', id=id, title = title)
+    cur = Database()
+    db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
+                             dbms_connect_username, dbms_schema, inner_num \
+                             from dbms_info \
+                             where db_id = %s and user_id=%s', (id, session.get('id')))
+
+    if not db_info:
+        flash('연결하려고 한 DBMS 정보는 사용자께서 소유하고 있지 않는 DBMS 입니다.')
+        return redirect(url_for('dbide.main'))
+
+    cur.close()
+
+    user_db = Database(dbms = db_info[0], host = db_info[1], port = db_info[2], user = db_info[4], \
+                       password = db_info[3], database = db_info[5])
+
+    if request.method == 'POST':
+        if 'table_name' in request.form:
+            if db_info[0] == 'mysql' or db_info[0] == 'maria':
+                table_info = user_db.excuteAll('desc ' + request.form.get('table_name'))
+            if db_info[0] == 'oracle':
+                table_info = user_db.excuteAll("select cname, coltype, width, nulls, defaultval from col where tname = '" +request.form.get('table_name').upper()+ "'")
+            user_db.close()
+            table_info = [list(i) for i in table_info]
+            return jsonify({'confirm' : True, 'table_info' : str(table_info), 'dbms':db_info[0]})
+        if 'query' in request.form:
+            table_name = request.form.get('query').split(" ")[2].split("(")[0]
+
+            if db_info[0] == 'mysql' or db_info[0] == 'maria':
+                user_db.excute('drop table ' + table_name)
+            if db_info[0] == 'oracle':
+                user_db.excute('drop table ' + table_name)
+                user_db.excute('purge recyclebin')
+            user_db.excute(request.form.get('query'))
+            user_db.commit()
+            user_db.close()
+            flash('Table 수정 완료했습니다.')
+            return jsonify({'confirm' : True})
+
+    databases, tables = user_db.show_databases_and_tables(db_info)
+    if db_info[0] == 'oracle':
+        t_list = user_db.excuteAll('select tname from tab')
+    if db_info[0] == 'mysql' or db_info[0] == 'maria':
+        t_list = tables
+    user_db.close()
+    return render_template('/no_major/create_table.html', id=id, title = title, databases=databases, tables = tables, t_list = t_list, db_info=db_info)
 
 
 @login_check
-@dbide.route('/execute_query_no_major/drop_table/<id>')
-def execute_query_no_major_drop_talbe(id):
+@dbide.route('/execute_query_no_major/drop_table/<id>', methods=['GET', 'POST'])
+def execute_query_no_major_drop_table(id):
     title = '테이블'
-    return render_template('/no_major/drop_db.html', id=id, title=title)
+    cur = Database()
+    db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
+                             dbms_connect_username, dbms_schema, inner_num \
+                             from dbms_info \
+                             where db_id = %s and user_id=%s', (id, session.get('id')))
+
+    if not db_info:
+        flash('연결하려고 한 DBMS 정보는 사용자께서 소유하고 있지 않는 DBMS 입니다.')
+        return redirect(url_for('dbide.main'))
+
+    cur.close()
+
+    user_db = Database(dbms = db_info[0], host = db_info[1], port = db_info[2], user = db_info[4], \
+                       password = db_info[3], database = db_info[5])
+
+    if request.method == 'POST':
+        print(request.form.get('drop_info'))
+        if db_info[0] == 'mysql' or db_info[0] == 'maria':
+            user_db.excute('drop table ' + request.form.get('drop_info'))
+        if db_info[0] == 'oracle':
+            user_db.excute('drop table ' + request.form.get('drop_info'))
+            user_db.excute('purge recyclebin')
+        user_db.commit()
+        flash('Table 삭제 완료했습니다.')
+        return redirect(url_for('.execute_query_no_major_drop_table', id=id))
+
+
+    databases, tables = user_db.show_databases_and_tables(db_info)
+    if db_info[0] == 'oracle':
+        t_list = user_db.excuteAll('select tname from tab')
+    if db_info[0] == 'mysql' or db_info[0] == 'maria':
+        t_list = tables
+    user_db.close()
+    return render_template('/no_major/drop_db.html', id=id, title=title, db_info = db_info, databases = databases, tables = tables, t_list = t_list)
 
 
 @login_check
