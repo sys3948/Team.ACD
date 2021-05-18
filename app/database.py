@@ -1,3 +1,4 @@
+from re import split
 from flask import current_app
 import mysql.connector as mysql
 import cx_Oracle as oracle
@@ -82,7 +83,8 @@ class Database():
         '''
         databases = None
         if self.dbms == 'oracle':
-            tables = self.excuteAll(f"SELECT default_tablespace FROM user_users")
+            # tables = self.excuteAll(f"SELECT default_tablespace FROM user_users")
+            tables = self.excuteAll("SELECT * FROM tab")
         else:
             databases = [db[0] for db in self.excuteAll('show databases') if db[0] != 'information_schema' ] if db_info[6] == 0 else None
             #외부db 연결시
@@ -93,8 +95,20 @@ class Database():
             else:
                 tables = self.excuteAll('show tables')
 
-        return databases,tables        
-    
+        return databases,tables  
+
+    def show_explain(self,sql):
+        explain = None
+        if self.dbms == 'oracle':
+            
+            self.excute(f"explain plan for {sql}")
+            explain = self.excuteAll("select * from table(dbms_xplan.display)")[5:-1]
+            explain = [el[0].split('|')[2:] for el in explain]
+            print(explain)
+
+        else:
+            explain=self.excuteOne(f"explain format=json {sql}")
+        return explain
 
 
 

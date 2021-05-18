@@ -2,14 +2,18 @@
 # dbms 내/외부 접속, 쿼리 실행(전공자 & 비전공자) 페이지의 url을 라우팅하는 뷰함수 python module
 
 #from flask import ...
-from flask import current_app, flash, render_template, request, session, url_for, redirect, jsonify
+from flask import current_app, flash, render_template, request, session, url_for, redirect, jsonify,Response,stream_with_context
 from . import dbide
+from .. import socketio
+from flask_socketio import emit,disconnect
+
 import mysql.connector as mysql
 from ..database import Database
 from ..decorate import login_check,connect_db
 from datetime import datetime
 import re
 import sqlparse
+
 
 @dbide.route('/')
 @dbide.route('/main')
@@ -166,19 +170,23 @@ def execute_query_result(id,dbms_info):
         try:
             #오라클에서 세미콜론 있으면 에러발생
             sql = sql.replace(';','')
-            results = user_db.excuteAll(sql)
             
-            msg_list.append(f'{sql}<br>쿼리실행 성공')
             sql_type = sqlparse.parse(sql)[0].tokens[0].value.upper()
 
             #select문 경우 실행
-            if results or sql_type == 'SELECT':
-
+            if sql_type == 'SELECT':
+                results = user_db.excuteAll(sql)
                 columns = [col[0] for col in user_db.get_cursor().description ]
-                json['explain'] = user_db.excuteOne(f"explain format=json {sql}")
+                
+                #전체데이터베이스 explain
+                json['explain'] = user_db.show_explain(sql)
+                json['dbms']   = user_db.dbms
                 json['results'] = render_template('include/query_result.html',results=results,columns=columns,sql_type=sql_type)
             else:    
+                results = user_db.excute(sql)
                 user_db.commit()
+
+            msg_list.append(f'{sql}<br>쿼리실행 성공')    
         except Exception as e:
             print(e)
             msg_list.append({'error_msg':f'{sql}<br>쿼리실행 실패<br>{e}'})
@@ -191,7 +199,16 @@ def execute_query_result(id,dbms_info):
     json['tables']   = render_template('include/table_nav.html',tables=tables,databases=databases,db_info=db_info)
     json['msg_list'] = msg_list
     return jsonify(json)
-    
+
+
+@socketio.on('import_csv', namespace = '/dbide')
+def import_csv(data):
+    print(data)
+    for i in range(1,10000+1):
+        emit('progress',{'progress':round((i/10000)*100,2)})
+    disconnect()
+        
+
 @login_check
 @dbide.route('/connect_schema/<id>/<schema>')
 @connect_db

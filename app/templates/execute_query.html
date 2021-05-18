@@ -42,6 +42,11 @@
 <script src="http://codemirror.net/mode/sql/sql.js"></script>
 <script src="http://codemirror.net/addon/hint/show-hint.js"></script>
 <script src="http://codemirror.net/addon/hint/sql-hint.js"></script>
+<!--web socket-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script> 
+
+
+
 {% endblock %}
 
 
@@ -58,13 +63,7 @@
 {% block main %}
   <div class="row container">
     <div class="col-md-4 border border-top-0 border-bottom-0 border-left-0 q-height">
-      <h2>
-          {% if db_info.0 == 'oracle' %}
-            tablespace 리스트
-          {% else %}
-            테이블 리스트
-          {% endif %}
-      </h2>
+      <h2>테이블 리스트</h2>
       <div id="table-list">
         {% include 'include/table_nav.html' %}
       </div>
@@ -89,6 +88,8 @@
           </div>
           
           <div class="mt-2 mb-2 text-right">
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#import-modal">Import CSV</button>
+            <button type="button" class="btn btn-primary">Export CSV</button>
             <button type="button" class="btn btn-primary" id="result">결과</button>
             <button type="button" class="btn btn-primary" id="plan">실행 계획</button>
           </div>
@@ -122,6 +123,8 @@
       
     </div>
   </div>
+
+{% include 'include/import_modal.html' %}
 
 
 <script src="{{ url_for('static', filename='js/explain.js') }}"></script>
@@ -159,8 +162,11 @@ $("#result").click(function(){
 
       if(response.results != undefined){
         updateResult(response.results,response.tables);
-        var json = JSON.parse(response.explain);
-        $("#explain").show_explain(dbms="mysql",json=json);
+        var exp_results = response.explain;
+        if(response.dbms == "mysql" || response.dbms == "maria")
+            exp_results = JSON.parse(response.explain);
+        
+        $("#explain").show_explain(dbms=response.dbms,exp_results=exp_results);
       }
       //테이블 자동완성 초기화
       initAutoComplete();
@@ -169,90 +175,6 @@ $("#result").click(function(){
   });
 });
 
-/*
-
-function mysql_explain(json,depth){
-  
-  Object.keys(json).forEach(function(key){
-
-    
-      if("nested_loop" == key){
-        
-        make_ul(
-                name=key,
-                depth=depth,
-                access_type=null,
-                cost=0
-              );
-
-      }else if(/^.+_subqueries$/.test(key)){
-        
-        make_ul(
-                name=key,
-                depth=depth,
-                access_type=null,
-                cost=json[key][0].query_block.cost_info.query_cost
-              );
-
-      }else if(key == "query_block"){
-        
-        if($("#explain ul").length==0){
-          make_ul(
-                  name=key,
-                  depth=depth,
-                  access_type=null,
-                  cost=json[key].cost_info.query_cost
-                  );
-          mysql_explain(json[key],depth+1);
-        }else{
-          mysql_explain(json[key],depth);
-        }
-      }
-      
-      if(key == "table"){
-      
-        make_ul(
-                  name=json[key].table_name,
-                  depth=depth,
-                  access_type=json[key].access_type,
-                  cost=json[key].cost_info.eval_cost
-                );
-          mysql_explain(json[key],depth+1);
-      } 
-
-      if(Array.isArray(json[key])){
-        
-        for(var i in json[key]){
-           
-          mysql_explain(json[key][i],depth+1);
-           
-        }
-      }
-    
-        
-  });
-}
-
-function make_ul(name,depth,access_type,cost){
-
-  access_type = (access_type == null) ? "" : access_type;
-  cost = (name == "query_block") ? "query_cost:"+cost : "cost:"+cost;
-
-  console.log("depth: "+depth)
-  var ul = "";
-  ul += "<ul id='depth-"+depth+"'>";
-  ul += "<li>";
-  ul += "<span class='text-info name'>"+name+"</span>&nbsp&nbsp";
-  ul += "<span class='text-danger access_type'>"+access_type+"</span><br>";
-  ul += "<span class='text-primary cost'>"+cost+"</span>";
-  ul += "</li>";
-  ul += "</ul>"
-  
-  if(depth == 0) $("#explain").append(ul)
-  else $("#depth-"+(depth-1)).append(ul);
-
-}
-*/
  
 function createMessage(msg,class_name){
   var alert = "";

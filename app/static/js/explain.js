@@ -17,16 +17,44 @@
 
     
 
-    $.fn.show_explain = function(dbms,json){
+    $.fn.show_explain = function(dbms,exp_results){
         $(this).empty();
         if(dbms == "oracle"){
+           oracle_explain(this,exp_results);
 
         }else{
-            mysql_explain(this,json,0);
+            mysql_explain(this,exp_results,0);
         }
             
     }
 
+    //oracle 실행계획
+    function oracle_explain(element,exp_results){
+
+      for(var arr of exp_results){
+          var depth = get_space_count(arr[0]);
+          
+          make_ul(
+            element,
+            arr[1].trim(),
+            depth-1,
+            arr[0].trim(),
+            arr[4].trim()
+          )
+      }
+
+    }
+    //글자앞 공백 세기
+    function get_space_count(str){
+      var cnt = 0;
+      for(var el of str){
+        if(el != " ") break;
+        cnt++;
+      }
+      return cnt;
+    }
+
+    
 
 
     //mysql 실행계획
@@ -118,11 +146,17 @@
         });
     }
 
+    //mysql, mariadb 용
     function make_ul(element,name,depth,access_type,cost){
-
+        console.log("element: "+element);
+        console.log("name: "+name);
+        console.log("depth: "+depth);
+        console.log("acess_type: "+access_type);
+        console.log("cost: "+cost);
+        
         access_type = (access_type == null) ? "" : access_type;
-        cost = (name == "query_block") ? "query_cost:"+cost : "cost:"+cost;
-      
+        //cost = (name == "query_block") ? "query_cost:"+cost : "cost:"+cost;
+        cost =  "Cost: "+cost;
         
         var ul = "";
         ul += "<ul id='depth-"+depth+"'>";

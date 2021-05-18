@@ -3,10 +3,12 @@
 
 from flask import Flask
 from flask_mail import Mail
+from flask_socketio import SocketIO
 from config import config, DevelopmentConfig
 
 
 mail = Mail()
+socketio = SocketIO()
 
 
 def create_app(config_name):
@@ -24,7 +26,7 @@ def create_app(config_name):
 
     from .dbide import dbide as dbide_blueprint
     app.register_blueprint(dbide_blueprint)
-
+    socketio.init_app(app)
 
     return app
 
