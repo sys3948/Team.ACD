@@ -2,17 +2,17 @@
 # dbms 내/외부 접속, 쿼리 실행(전공자 & 비전공자) 페이지의 url을 라우팅하는 뷰함수 python module
 
 #from flask import ...
-from flask import current_app, flash, json, render_template, request, session, url_for, redirect, jsonify
+from flask import current_app, flash, json, render_template, request, session, url_for, redirect, jsonify,Response
 from . import dbide
-from .. import socketio
-from flask_socketio import emit,disconnect
-
 import mysql.connector as mysql
 from ..database import Database
 from ..decorate import login_check,connect_db
 from datetime import datetime
 import re
 import sqlparse
+from app.celery import async_import_csv
+import os 
+from werkzeug.utils import secure_filename
 
 
 @dbide.route('/')
@@ -175,7 +175,9 @@ def execute_query_result(id,dbms_info):
 
             #select문 경우 실행
             if sql_type == 'SELECT':
+
                 results = user_db.excuteAll(sql)
+                
                 columns = [col[0] for col in user_db.get_cursor().description ]
                 
                 #전체데이터베이스 explain
@@ -201,13 +203,7 @@ def execute_query_result(id,dbms_info):
     return jsonify(json)
 
 
-@socketio.on('import_csv', namespace = '/dbide')
-def import_csv(data):
-    print(data)
-    for i in range(1,10000+1):
-        emit('progress',{'progress':round((i/10000)*100,2)})
-    disconnect()
-        
+
 
 @login_check
 @dbide.route('/connect_schema/<id>/<schema>')
@@ -235,6 +231,71 @@ def connect_schema(id,schema,dbms_info):
 
     
     return jsonify(json)    
+
+
+
+import csv
+#client로부터 csv 파일 받아서 비동기처리 요청
+@login_check
+@dbide.route('/import_csv/<id>',methods=['POST'])
+@connect_db
+def import_csv(id,dbms_info):
+    
+    db_info = dbms_info.get('db_info')
+
+    csv_file  = request.files.get('csv_file')
+    #파일명,확장자
+    orgin_filename, ext = csv_file.filename.rsplit('.',1)
+    filename = orgin_filename
+
+    #같은 파일명 있으면 파일명뒤에 고유번호 부여
+    unique = 1
+    while os.path.exists(f"{current_app.config['UPLOAD_FOLDER_PATH']}/{filename}.{ext}"):
+        filename = f"{orgin_filename}{unique}"
+        unique += 1
+
+
+    csv_file.save(os.path.join(current_app.config['UPLOAD_FOLDER_PATH'], secure_filename(filename+'.'+ext)))
+
+    
+    #비동기 작업요청
+    task = async_import_csv.apply_async([
+                    db_info,
+                    filename+'.'+ext,
+                    request.form.get('table_name')
+                ])
+
+    return jsonify({'task_id':task.id})
+
+#import csv 작업진행율을 클라이언트에 전송
+@dbide.route('/import_csv_progress/<task_id>')
+def import_csv_progress(task_id):
+
+    def generate():
+        task = async_import_csv.AsyncResult(task_id)
+        
+        
+        while task.state != 'SUCCESS' and task.state != 'FAILURE':
+            if task.state == 'PENDING':
+                yield f"data:{task.state}&&{0}\n\n"
+                
+            else:
+                yield f"data:{task.state}&&{round(task.info.get('current')/task.info.get('total')*100,2)}\n\n"
+        
+        if task.state == 'SUCCESS':
+            
+            if task.get().get('error'):
+                yield f"data:{task.state}&&{round(task.info.get('current')/task.info.get('total')*100,2)}&&{task.get().get('error')}\n\n"
+            else:    
+                yield f"data:{task.state}&&{round(task.info.get('current')/task.info.get('total')*100,2)}\n\n"
+        
+        
+        
+
+        
+    return Response(generate(), mimetype= 'text/event-stream')
+    
+
 
 
 

@@ -3,20 +3,23 @@
 
 from flask import Flask
 from flask_mail import Mail
-from flask_socketio import SocketIO
-from config import config, DevelopmentConfig
+from config import config, DevelopmentConfig,Config
+from celery import Celery
 
 
 mail = Mail()
-socketio = SocketIO()
 
+
+celery = Celery(__name__,broker=Config.CELERY_BROKER_URL,backend=Config.CELERY_RESULT_BACKEND)
 
 def create_app(config_name):
     app = Flask(__name__)
+
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
-
     mail.init_app(app)
+
+    celery.conf.update(app.config)
 
     from .admin import admin as admin_blueprint
     app.register_blueprint(admin_blueprint, url_prefix='/admin')
@@ -26,7 +29,7 @@ def create_app(config_name):
 
     from .dbide import dbide as dbide_blueprint
     app.register_blueprint(dbide_blueprint)
-    socketio.init_app(app)
+    
 
     return app
 
