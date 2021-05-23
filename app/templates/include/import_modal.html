@@ -5,10 +5,21 @@
         <div class="modal-content">
             <div class="modal-header">
             <h4 class="modal-title">import</h4>
-            <button type="button" class="close close-modal" data-dismiss="modal">×</button>
+            <button type="button" class="close close-import-modal">×</button>
             </div>
             <div class="modal-body">
                 <form id="import-csv-form" enctype="multipart/form-data">
+                    <!--외부접속시 데이터베이스 목록 보여준다-->
+                    {% if databases and db_info[0] != 'oracle'%}
+                        <label>데이터베이스 선택</label><br>
+                        <select name="database_opt" id="database-opt" class="form-control">
+                            {% for db in databases %}
+                                <option>{{db}}</option>
+                            {% endfor %}
+                        </select><br>
+
+                    {% endif %}
+
                     <label>테이블 선택</label><br>
                     <select class="form-control" id="table-opt" name="table-opt">
                         {% for table in tables %}
@@ -29,7 +40,7 @@
                     </div>
                     <div class="text-right">
                         <button type="button" id="next" class="btn btn-default">import</button>
-                        <button type="button" class="btn btn-default close-modal"  data-dismiss="modal">close</button>
+                        <button type="button" class="btn btn-default close-import-modal">close</button>
                     </div>
                 
                     
@@ -42,12 +53,52 @@
 </div>
 
 <script>
+    init();
+
+    var source;
     function init(){
         $("#import-modal").find('form')[0].reset()
         set_progress_kind("");
         set_progress(0+"%");
         show_import_error("");
+        // 외부 접속시 
+        if($("#database-opt").length > 0){
+            request_table($("#database-opt option:selected").val());
+        }
+
     }
+    //데이터베이스 선택 변경되면 
+    $("#database-opt").change(function(){
+        request_table($("#database-opt option:selected").val());
+    });
+
+    //외부접속시 선택한 데이터베이스 테이블 요청
+    function request_table(database_name){
+        $("#table-opt").empty();
+        $.ajax({
+          type : "GET",
+          url : "/ajax_request_tables/{{id}}/"+database_name,
+          success : (response) => {
+            console.log(response.tables);
+
+            //테이블 조회시 에러 발생하면
+            if(response.error != undefined) show_import_error(response.error);
+            else $("#table-opt").append(make_table_option(response.tables));
+
+          }
+        });
+    }
+
+    // 테이블수 만큼 테이블 만들기
+    function make_table_option(table_list){
+        
+        var options = "";
+        for(var table of  table_list)
+            options += "<option>"+table[0]+"</option>"
+            
+        return options;
+    }
+
 
     $("#next").click(function(){
         
@@ -70,7 +121,8 @@
                 return xhr;
             },
           success : (response) => {
-            
+            //모달 닫기 버튼에 task-id 속성 추가  
+            $(".close-import-modal").attr("task-id",response.task_id);
             set_progress_kind("삽입 중");
             show_progress(response.task_id)        
           }
@@ -84,7 +136,7 @@
 
     function show_progress(task_id){
         var url = "/import_csv_progress/"+task_id;
-        var source = new EventSource(url);
+        source = new EventSource(url);
 
         source.onmessage = function(event) {
             
@@ -101,6 +153,7 @@
             }
             if(parseInt(progress) == 100){
                 console.log("연결 close");
+                
                 set_progress_kind("완료");
                 source.close();
             }
@@ -108,6 +161,33 @@
 
         }
     }
+
+    //모달 닫기 클릭시
+    $(".close-import-modal").click(function(){
+        //task-id attr 있으면 작업이미 실행중
+        if($(this).attr("task-id") != undefined){
+            //작업취소
+            if(confirm("작업취소하시겠습니까?"))
+                revoke_async_task($(this).attr("task-id"));
+        }else{
+            $("#import-modal").modal("hide");
+        }
+
+    });
+
+    //비동기 작업취소
+    function revoke_async_task(task_id){
+        console.log(task_id);
+        $.ajax({
+          type : "GET",
+          url : "/revoke_async_task/"+task_id,
+          success : (response) => {
+            $("#import-modal").modal("hide");
+            source.close();
+          }
+        });
+    }
+
     // modal close
     $('#import-modal').on('hidden.bs.modal', function (e) {
         init();
@@ -132,7 +212,8 @@
         var form_data = new FormData();
         form_data.append("table_name",$("#table-opt option:selected").val());
         form_data.append("csv_file",$("input[name=csv_file]")[0].files[0]);
-
+        if($("#database-opt").length > 0)
+            form_data.append("database_opt",$("#database-opt option:selected").val());
         return form_data;
     }
 

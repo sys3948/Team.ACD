@@ -10,9 +10,11 @@ from ..decorate import login_check,connect_db
 from datetime import datetime
 import re
 import sqlparse
-from app.celery import async_import_csv
+from app.celery import async_import_csv,async_revoke_task
 import os 
 from werkzeug.utils import secure_filename
+
+
 
 
 @dbide.route('/')
@@ -203,6 +205,26 @@ def execute_query_result(id,dbms_info):
     return jsonify(json)
 
 
+@login_check
+@dbide.route('/ajax_request_tables/<id>/<database>')
+@connect_db
+def ajax_request_tables(id,database,dbms_info):
+    '''
+        외부접속시 import csv modal에서 데이터베이스
+        선택시 해당 데이터베이스 테이블목록 반환 
+    '''
+    user_db = dbms_info.get('user_db')
+    context = {}
+    try:
+        tables = user_db.excuteAll(f"show tables from {database}")
+        print(tables)
+        context['tables'] = tables
+    except Exception as e:
+        print(e)
+        context['error'] = str(e)
+        
+    return jsonify(context)
+
 
 
 @login_check
@@ -234,7 +256,6 @@ def connect_schema(id,schema,dbms_info):
 
 
 
-import csv
 #client로부터 csv 파일 받아서 비동기처리 요청
 @login_check
 @dbide.route('/import_csv/<id>',methods=['POST'])
@@ -257,15 +278,18 @@ def import_csv(id,dbms_info):
 
     csv_file.save(os.path.join(current_app.config['UPLOAD_FOLDER_PATH'], secure_filename(filename+'.'+ext)))
 
-    
+
     #비동기 작업요청
+    #database_opt는 외부접속시만 있음
     task = async_import_csv.apply_async([
                     db_info,
                     filename+'.'+ext,
-                    request.form.get('table_name')
+                    request.form.get('table_name'),
+                    request.form.get('database_opt')
                 ])
 
     return jsonify({'task_id':task.id})
+
 
 #import csv 작업진행율을 클라이언트에 전송
 @dbide.route('/import_csv_progress/<task_id>')
@@ -289,12 +313,23 @@ def import_csv_progress(task_id):
             else:    
                 yield f"data:{task.state}&&{round(task.info.get('current')/task.info.get('total')*100,2)}\n\n"
         
-        
-        
-
-        
     return Response(generate(), mimetype= 'text/event-stream')
+
+
+
+
+
+#비동기 작업 취소
+@dbide.route('/revoke_async_task/<task_id>')
+def revoke_task(task_id):
+    context = {}
     
+    async_revoke_task.delay(task_id)
+
+    task = async_revoke_task.AsyncResult(task_id)
+    print("task: ",task.state)
+
+    return jsonify(context)
 
 
 

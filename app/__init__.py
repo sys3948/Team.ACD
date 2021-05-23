@@ -19,8 +19,9 @@ def create_app(config_name):
     config[config_name].init_app(app)
     mail.init_app(app)
 
+    
     celery.conf.update(app.config)
-
+    
     from .admin import admin as admin_blueprint
     app.register_blueprint(admin_blueprint, url_prefix='/admin')
 

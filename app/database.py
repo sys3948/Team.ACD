@@ -96,8 +96,16 @@ class Database():
                 tables = self.excuteAll('show tables')
 
         return databases,tables  
-
+    
+    
     def show_explain(self,sql):
+        '''
+            db 실행계획 보여주기
+            Args:
+                sql: sql 질의(string)
+            Returns:
+                실행계획    
+        '''
         explain = None
         if self.dbms == 'oracle':
             
