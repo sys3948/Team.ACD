@@ -70,10 +70,6 @@ def async_import_csv(self,db_info,csv_file_name,table_name,database_name):
 
     return context
     
-    
-    #self.update_state(state='PROGRESS', meta={'current': i, 'total': total})
-
-
 
 @celery.task(bind=True)
 def async_export_csv(self,db_info,csv_file_name,table_name,database_name):
@@ -83,10 +79,14 @@ def async_export_csv(self,db_info,csv_file_name,table_name,database_name):
     user_db = Database(dbms=db_info[0],host=db_info[1],port = db_info[2],user = db_info[4],password=db_info[3],database = db_info[5])
     encryption_file_name = secure_filename(str(generate_password_hash(str(time.time())))+".csv")
     try:
-        rows = user_db.excuteAll(f"""SELECT * FROM {table_name}""")
-        
+        if database_name and db_info[0] != 'oracle':
+            total = int(user_db.excuteOne(f"""SELECT COUNT(*) FROM {database_name}.{table_name}""")[0])    
+            rows = user_db.excuteAll(f"""SELECT * FROM {database_name}.{table_name}""")
+        else:
+            total = int(user_db.excuteOne(f"""SELECT COUNT(*) FROM {table_name}""")[0])
+            rows = user_db.excuteAll(f"""SELECT * FROM {table_name}""")
+    
         columns = [col[0] for col in user_db.get_cursor().description ]
-        total = int(user_db.excuteOne(f"""SELECT COUNT(*) FROM {table_name}""")[0])
 
         with open(os.path.join(current_app.config['DOWNLOAD_FOLDER_PATH'],encryption_file_name),'w',encoding="utf-8",newline="") as f:
             
@@ -97,7 +97,10 @@ def async_export_csv(self,db_info,csv_file_name,table_name,database_name):
                 
                 wr.writerow(row)
                 current += 1
-                self.update_state(state='PROGRESS', meta={'current': current, 'total': total})
+                self.update_state(state='PROGRESS', meta={'current': current, 
+                                                          'total': total,
+                                                          'encryption_file_name':encryption_file_name,
+                                                          'csv_file_name':csv_file_name})
 
     except Exception as e:
         print(e)
@@ -106,7 +109,7 @@ def async_export_csv(self,db_info,csv_file_name,table_name,database_name):
         user_db.close()
         
 
-    context = {'current':current, 'total': total}
+    context = {'current':current, 'total': total,'encryption_file_name':encryption_file_name,'csv_file_name':csv_file_name}
 
     if error:
         context.update({'error':error})

@@ -12,7 +12,7 @@
                     <!--외부접속시 데이터베이스 목록 보여준다-->
                     {% if databases and db_info[0] != 'oracle'%}
                         <label>데이터베이스 선택</label><br>
-                        <select name="database_opt" id="database-opt" class="form-control">
+                        <select name="database_opt"  class="form-control database-opt">
                             {% for db in databases %}
                                 <option>{{db}}</option>
                             {% endfor %}
@@ -21,14 +21,15 @@
                     {% endif %}
 
                     <label>테이블 선택</label><br>
-                    <select class="form-control" id="table-opt" name="table_opt">
+                    <select class="form-control table-opt"  name="table_opt">
                         {% for table in tables %}
                             <option>{{table.0}}</option>
                         {% endfor %}
                     </select><br>
 
                     <label>저장할 파일명</label><br>
-                    <input type="text" id="save-file-name" class="form-control" class="save_file_name" placeholder="확장자 제외"><br>
+                    <input type="text" id="save-file-name" class="form-control" name="save_file_name" placeholder="ex)filename.csv" required><br>
+                    <labe class="progress-kind"></labe><br>
                     <!--progress bar-->
                     <div class="progress" style="width: 100%; ">
                         <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
@@ -36,8 +37,8 @@
                         </div>
                     </div><br>
                     <!-- error message -->
-                    <div class="alert alert-danger import-error" style="display: none;">
-                        <span id="import_error_text"></span>
+                    <div class="alert alert-danger csv-error" style="display: none;">
+                        <span class="csv-error-text"></span>
                     </div>
                     <div class="text-right">
                         <button type="button" id="export-btn" class="btn btn-default">export</button>
@@ -45,15 +46,31 @@
                     </div>
                 
                 </form>
-
+                <!--파일 다운로드 폼-->
+                <form id="csv-download-form" action="/download_csv_file" method="POST" style="display: none;">
+                    <input type="hidden" name="encryption_file_name">
+                    <input type="hidden" name="csv_file_name">
+                </form>
                 
             </div>
         </div>
     </div>
 </div>
 
-
+<script src="{{ url_for('static', filename='js/csv.js') }}"></script>
 <script>
+
+$(function(){
+    var csv = $("#export-modal").CSV("{{id}}","export");
+    csv.init();
+
+    //저장파일명을 default로 선택된 테이블명으로 설정
+    $("#save-file-name").val($("#export-modal .table-opt option:selected").val()+".csv");
+    $("#export-modal .table-opt").change(function(){
+        $("#save-file-name").val($("#export-modal .table-opt option:selected").val()+".csv");
+    });
+
+    
     $("#export-btn").click(function(){
         
         $.ajax({
@@ -61,42 +78,19 @@
           url : "/export_csv/{{id}}",
           data : $("#export-csv-form").serialize(),
           success : (response) => {
-            show_progress(response.task_id);
-          }
-        });
-    });
-    function show_progress(task_id){
-        var url = "/export_csv_progress/"+task_id;
-        source = new EventSource(url);
-
-        source.onmessage = function(event) {
-            
-            var data = event.data.split("&&");
-            var state = data[0];
-            var progress = data[1];
-
-        
-            show_import_error("");
-            set_progress(progress+'%');
-            if(data.length == 3){
-                show_import_error(data[2]);
-                source.close();
-            }
-            if(parseInt(progress) == 100){
-                console.log("연결 close");
-                
-                set_progress_kind("완료");
-                source.close();
-            }
-            
+            var url = "/export_csv_progress/"+response.task_id;  
+            csv.set_progress_kind("export 중");
+            csv.show_progress(url);
 
         }
-    }
+        });
+    });
 
-    function set_progress(percent){
-        $('.progress-bar').css('width', percent).attr('aria-valuenow',percent);
-        $('.progress-bar-label').text(percent);
-    }
+
+});
+
+    
+    
 
 </script>
 

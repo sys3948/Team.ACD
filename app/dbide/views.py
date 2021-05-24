@@ -2,7 +2,7 @@
 # dbms 내/외부 접속, 쿼리 실행(전공자 & 비전공자) 페이지의 url을 라우팅하는 뷰함수 python module
 
 #from flask import ...
-from flask import current_app, flash, json, render_template, request, session, url_for, redirect, jsonify,Response
+from flask import current_app, flash, json, render_template, request, session, url_for, redirect, jsonify,Response,send_file,after_this_request
 from . import dbide
 import mysql.connector as mysql
 from ..database import Database
@@ -12,6 +12,7 @@ import re
 import sqlparse
 from app.celery import async_import_csv,async_export_csv
 import os 
+import io
 from werkzeug.utils import secure_filename
 
 
@@ -297,7 +298,8 @@ def import_csv(id,dbms_info):
 @connect_db
 def export_csv(id,dbms_info):
     db_info = dbms_info.get('db_info')
-
+    print("save_file_name: ",request.form.get('save_file_name'))
+    print("databases: ",request.form.get('database_opt'))
     task=async_export_csv.apply_async([
                     db_info,
                     request.form.get('save_file_name'),
@@ -326,20 +328,52 @@ def csv_progress(import_task_id=None,export_task_id=None):
                 yield f"data:{task.state}&&{0}\n\n"
                 
             else:
-                yield f"data:{task.state}&&{round(task.info.get('current')/task.info.get('total')*100,2)}\n\n"
+                if export_task_id:
+                    yield f"data:{task.state}&&{round(task.info.get('current')/task.info.get('total')*100,2)}&&{task.info.get('encryption_file_name')}&&{task.info.get('csv_file_name')}\n\n"
+                else:    
+                    yield f"data:{task.state}&&{round(task.info.get('current')/task.info.get('total')*100,2)}\n\n"
         
         if task.state == 'SUCCESS':
             
             if task.get().get('error'):
                 yield f"data:{task.state}&&{round(task.info.get('current')/task.info.get('total')*100,2)}&&{task.get().get('error')}\n\n"
-            else:    
+            else:
                 yield f"data:{task.state}&&{round(task.info.get('current')/task.info.get('total')*100,2)}\n\n"
         
     return Response(generate(), mimetype= 'text/event-stream')
 
 
 
+@dbide.route('/download_csv_file',methods=['POST'])
+def download_csv_file():
+    
+    #사용자가 지정한 파일명
+    csv_file_name = request.form.get('csv_file_name')
+    if csv_file_name.find(".csv") == -1:
+        csv_file_name = request.form.get('csv_file_name') + ".csv" 
 
+    encryption_file_name = request.form.get('encryption_file_name')
+    file_path = os.path.join(current_app.config['DOWNLOAD_FOLDER_PATH'],encryption_file_name)
+
+    if os.path.exists(file_path):
+        
+        return_data = io.BytesIO()
+
+        with open(file_path,'rb') as f:
+            return_data.write(f.read())
+
+        return_data.seek(0)
+
+        os.remove(file_path)    
+
+        return send_file(
+            return_data,
+            mimetype="text/csv",
+            attachment_filename=csv_file_name,
+            as_attachment=True
+        )
+    else:
+        return "파일이 존재하지 않습니다."
 
 
 @login_check

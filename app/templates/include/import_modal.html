@@ -12,7 +12,7 @@
                     <!--외부접속시 데이터베이스 목록 보여준다-->
                     {% if databases and db_info[0] != 'oracle'%}
                         <label>데이터베이스 선택</label><br>
-                        <select name="database_opt" id="database-opt" class="form-control">
+                        <select name="database_opt"  class="form-control database-opt">
                             {% for db in databases %}
                                 <option>{{db}}</option>
                             {% endfor %}
@@ -21,7 +21,7 @@
                     {% endif %}
 
                     <label>테이블 선택</label><br>
-                    <select class="form-control" id="table-opt" name="table-opt">
+                    <select class="form-control table-opt"  name="table-opt">
                         {% for table in tables %}
                             <option>{{table.0}}</option>
                         {% endfor %}
@@ -29,14 +29,14 @@
 
                     <label>csv 선택</label><br>
                     <input class="form-control" name="csv_file" type="file"><br>
-                    <labe id="progress-kind"></labe>
+                    <labe class="progress-kind"></labe>
                     <div class="progress" style="width: 100%; ">
                         <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
                             <span class="progress-bar-label">0%</span>
                         </div>
                     </div><br>
-                    <div class="alert alert-danger import-error" style="display: none;">
-                        <span class="import_error_text"></span>
+                    <div class="alert alert-danger csv-error" style="display: none;">
+                        <span class="csv-error-text"></span>
                     </div>
                     <div class="text-right">
                         <button type="button" id="next" class="btn btn-default">import</button>
@@ -51,60 +51,16 @@
         </div>
     </div>
 </div>
-
+<script src="{{ url_for('static', filename='js/csv.js') }}"></script>
 <script>
 
-
-init();
-
-var source;
-function init(){
-    $("#import-modal").find('form')[0].reset()
-    set_progress_kind("");
-    set_progress(0+"%");
-    show_import_error("");
-    // 외부 접속시 
-    if($("#database-opt").length > 0){
-        request_table($("#database-opt option:selected").val());
-    }
-
-}
-//데이터베이스 선택 변경되면 
-$("#database-opt").change(function(){
-    request_table($("#database-opt option:selected").val());
-});
-
-//외부접속시 선택한 데이터베이스 테이블 요청
-function request_table(database_name){
-    $("#table-opt").empty();
-    $.ajax({
-      type : "GET",
-      url : "/ajax_request_tables/{{id}}/"+database_name,
-      success : (response) => {
-        console.log(response.tables);
-
-        //테이블 조회시 에러 발생하면
-        if(response.error != undefined) show_import_error(response.error);
-        else $("#table-opt").append(make_table_option(response.tables));
-
-      }
-    });
-}
-
-// 테이블수 만큼 테이블 만들기
-function make_table_option(table_list){
+$(function(){
+    var csv = $("#import-modal").CSV("{{id}}","import");
+    csv.init();
+    $("#next").click(function(){
     
-    var options = "";
-    for(var table of  table_list)
-        options += "<option>"+table[0]+"</option>"
-        
-    return options;
-}
+    csv.set_progress_kind("업로드 중");
 
-
-$("#next").click(function(){
-    
-    set_progress_kind("업로드 중");
     var form_data = get_form_data();
     $.ajax({
       type : "post",
@@ -117,83 +73,33 @@ $("#next").click(function(){
             var xhr = $.ajaxSettings.xhr();
             xhr.upload.onprogress = function(e) { //progress 이벤트 리스너 추가
                 var percent = (e.loaded/e.total*100).toFixed(2);
-                set_progress(percent+"%");
+                csv.set_progress(percent+"%");
                 
             };
             return xhr;
         },
       success : (response) => {
-    
-        set_progress_kind("삽입 중");
-        show_progress(response.task_id);        
+        var url = "/import_csv_progress/"+response.task_id;
+        csv.set_progress_kind("삽입 중");
+        csv.show_progress(url);        
       }
     });
 });
 
-
-function set_progress_kind(text){
-    $("#progress-kind").text(text);
-}
-
-function show_progress(task_id){
-    var url = "/import_csv_progress/"+task_id;
-    source = new EventSource(url);
-
-    source.onmessage = function(event) {
-        
-        var data = event.data.split("&&");
-        var state = data[0];
-        var progress = data[1];
-
-    
-        show_import_error("");
-        set_progress(progress+'%');
-        if(data.length == 3){
-            show_import_error(data[2]);
-            source.close();
-        }
-        if(parseInt(progress) == 100){
-            console.log("연결 close");
-            
-            set_progress_kind("완료");
-            source.close();
-        }
-        
-
-    }
-}
-
-
-
-
-// modal close
-$('#import-modal').on('hidden.bs.modal', function (e) {
-    init();
-    
-});
-
-function show_import_error(error){
-    if(error!="")
-        $(".import-error").css("display","block");
-    else
-        $(".import-error").css("display","none");
-        
-    $("#import_error_text").text(error);
-}
-
-function set_progress(percent){
-    $('.progress-bar').css('width', percent).attr('aria-valuenow',percent);
-    $('.progress-bar-label').text(percent);
-}
-
 function get_form_data(){
     var form_data = new FormData();
-    form_data.append("table_name",$("#table-opt option:selected").val());
+    form_data.append("table_name",$("#import-modal .table-opt option:selected").val());
     form_data.append("csv_file",$("input[name=csv_file]")[0].files[0]);
-    if($("#database-opt").length > 0)
-        form_data.append("database_opt",$("#database-opt option:selected").val());
+    if($("#import-modal .database-opt").length > 0)
+        form_data.append("database_opt",$("#import-modal .database-opt option:selected").val());
     return form_data;
 }
+
+})();
+
+
+
+
 
 
 </script>
