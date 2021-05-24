@@ -10,7 +10,7 @@ from ..decorate import login_check,connect_db
 from datetime import datetime
 import re
 import sqlparse
-from app.celery import async_import_csv,async_revoke_task
+from app.celery import async_import_csv,async_export_csv
 import os 
 from werkzeug.utils import secure_filename
 
@@ -290,13 +290,35 @@ def import_csv(id,dbms_info):
 
     return jsonify({'task_id':task.id})
 
+#테이블 데이터를 csv 파일로 저장
 
-#import csv 작업진행율을 클라이언트에 전송
-@dbide.route('/import_csv_progress/<task_id>')
-def import_csv_progress(task_id):
+@login_check
+@dbide.route('/export_csv/<id>',methods=['POST'])
+@connect_db
+def export_csv(id,dbms_info):
+    db_info = dbms_info.get('db_info')
+
+    task=async_export_csv.apply_async([
+                    db_info,
+                    request.form.get('save_file_name'),
+                    request.form.get('table_opt'),
+                    request.form.get('database_opt')
+                ])    
+
+    return jsonify({'task_id':task.id})
+
+
+
+#import,export  csv 작업진행율을 클라이언트에 전송
+@dbide.route('/import_csv_progress/<import_task_id>')
+@dbide.route('/export_csv_progress/<export_task_id>')
+def csv_progress(import_task_id=None,export_task_id=None):
 
     def generate():
-        task = async_import_csv.AsyncResult(task_id)
+        if import_task_id:
+            task = async_import_csv.AsyncResult(import_task_id)
+        else:
+            task = async_export_csv.AsyncResult(export_task_id)
         
         
         while task.state != 'SUCCESS' and task.state != 'FAILURE':
@@ -316,20 +338,6 @@ def import_csv_progress(task_id):
     return Response(generate(), mimetype= 'text/event-stream')
 
 
-
-
-
-#비동기 작업 취소
-@dbide.route('/revoke_async_task/<task_id>')
-def revoke_task(task_id):
-    context = {}
-    
-    async_revoke_task.delay(task_id)
-
-    task = async_revoke_task.AsyncResult(task_id)
-    print("task: ",task.state)
-
-    return jsonify(context)
 
 
 

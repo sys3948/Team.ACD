@@ -89,7 +89,7 @@
           
           <div class="mt-2 mb-2 text-right">
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#import-modal">Import CSV</button>
-            <button type="button" class="btn btn-primary">Export CSV</button>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#export-modal">Export CSV</button>
             <button type="button" class="btn btn-primary" id="result">결과</button>
             
           </div>
@@ -123,9 +123,10 @@
       
     </div>
   </div>
-
+<!--import csv-->
 {% include 'include/import_modal.html' %}
-
+<!--export csv-->
+{% include 'include/export_modal.html' %}
 
 <script src="{{ url_for('static', filename='js/explain.js') }}"></script>
 <script>
