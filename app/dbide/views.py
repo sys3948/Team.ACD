@@ -14,6 +14,8 @@ from datetime import datetime
 import re
 import sqlparse
 
+from app import database
+
 
 @dbide.route('/')
 @dbide.route('/main')
@@ -220,10 +222,11 @@ def connect_schema(id,schema,dbms_info):
     json = {}
     try:
         
-        tables = user_db.excuteAll(f'show tables from {schema}')
+        # tables = user_db.excuteAll(f'show tables from {schema}')
         
         cur = Database()
         cur.excute('UPDATE dbms_info SET dbms_schema=%s WHERE db_id=%s',(schema,id,))
+        # cur.excute('select * from table_name where id=%s', (id,))
         cur.commit()
         cur.close()
         user_db.close()
@@ -260,7 +263,7 @@ def execute_query_no_major(id):
 
     user_db.close()
 
-    return render_template('/no_major/main.html', id=id, databases=databases, tables=tables, db_info = db_info)
+    return render_template('/no_major/main.html', id=id, databases=databases, tables=tables, db_info = db_info, dbms_schema = db_info[5])
 
 
 @login_check
@@ -277,7 +280,7 @@ def execute_query_no_major_create_db(id):
         return redirect(url_for('dbide.main'))
 
     cur.close()
-    return render_template('/no_major/create_db.html', id=id, db_info = db_info)
+    return render_template('/no_major/create_db.html', id=id, db_info = db_info, dbms_schema = db_info[5])
 
 
 @login_check
@@ -295,7 +298,7 @@ def execute_query_no_major_drop_db(id):
         return redirect(url_for('dbide.main'))
 
     cur.close()
-    return render_template('/no_major/drop_db.html', id=id, title = title, db_info = db_info)
+    return render_template('/no_major/drop_db.html', id=id, title = title, db_info = db_info, dbms_schema = db_info[5])
 
 
 @login_check
@@ -331,7 +334,7 @@ def execute_query_no_major_create_table(id):
 
     databases, tables = user_db.show_databases_and_tables(db_info)
     user_db.close()
-    return render_template('/no_major/create_table.html', id=id, title = title, databases=databases, tables = tables, db_info=db_info)
+    return render_template('/no_major/create_table.html', id=id, title = title, databases=databases, tables = tables, db_info=db_info, dbms_schema = db_info[5])
 
 
 @login_check
@@ -354,35 +357,56 @@ def execute_query_no_major_alter_table(id):
                        password = db_info[3], database = db_info[5])
 
     if request.method == 'POST':
-        if 'table_name' in request.form:
-            if db_info[0] == 'mysql' or db_info[0] == 'maria':
-                table_info = user_db.excuteAll('desc ' + request.form.get('table_name'))
-            if db_info[0] == 'oracle':
-                table_info = user_db.excuteAll("select cname, coltype, width, nulls, defaultval from col where tname = '" +request.form.get('table_name').upper()+ "'")
-            user_db.close()
-            table_info = [list(i) for i in table_info]
-            return jsonify({'confirm' : True, 'table_info' : str(table_info), 'dbms':db_info[0]})
-        if 'query' in request.form:
-            table_name = request.form.get('query').split(" ")[2].split("(")[0]
+        try:
+            if 'table_name' in request.form:
+                if db_info[0] == 'mysql' or db_info[0] == 'maria':
+                    table_info = user_db.excuteAll('desc ' + request.form.get('table_name'))
+                if db_info[0] == 'oracle':
+                    table_info = user_db.excuteAll(
+                        "select column_info.cname, column_info.coltype, column_info.width, column_info.nulls, \
+                                column_info.defaultval, column_constraints_info.constraint_type\
+                        from ( \
+                            select tname, cname, coltype, width, nulls, defaultval \
+                            from col \
+                            where tname = '" + request.form.get('table_name').upper() +"'\
+                        ) column_info\
+                        inner join ( \
+                            select a.table_name, a.constraint_type, b.column_name \
+                            from all_constraints a join all_cons_columns b \
+                            on a.constraint_name = b.constraint_name \
+                            where a.table_name = '" +request.form.get('table_name').upper()+ "'\
+                        ) column_constraints_info \
+                        on column_info.cname = column_constraints_info.column_name"
+                    )
+                user_db.close()
+                table_info = [list(i) for i in table_info]
+                return jsonify({'confirm' : True, 'table_info' : str(table_info), 'dbms':db_info[0]})
+            if 'query' in request.form:
+                table_name = request.form.get('query').split(" ")[2].split("(")[0]
 
-            if db_info[0] == 'mysql' or db_info[0] == 'maria':
-                user_db.excute('drop table ' + table_name)
-            if db_info[0] == 'oracle':
-                user_db.excute('drop table ' + table_name)
-                user_db.excute('purge recyclebin')
-            user_db.excute(request.form.get('query'))
-            user_db.commit()
+                if db_info[0] == 'mysql' or db_info[0] == 'maria':
+                    user_db.excute(f'drop table { table_name}')
+                if db_info[0] == 'oracle':
+                    user_db.excute(f'drop table { table_name}')
+                    user_db.excute('purge recyclebin')
+                user_db.excute(request.form.get('query'))
+                user_db.commit()
+                user_db.close()
+                flash('Table 수정 완료했습니다.')
+                return jsonify({'confirm' : True})
+        except Exception as e:
             user_db.close()
-            flash('Table 수정 완료했습니다.')
-            return jsonify({'confirm' : True})
+            print(e)
+            return jsonify({'confirm' : False, 'msg' : str(e)})
 
     databases, tables = user_db.show_databases_and_tables(db_info)
     if db_info[0] == 'oracle':
         t_list = user_db.excuteAll('select tname from tab')
     if db_info[0] == 'mysql' or db_info[0] == 'maria':
-        t_list = tables
+        t_list = user_db.excuteAll(f'show tables from {db_info[5]}')
+
     user_db.close()
-    return render_template('/no_major/create_table.html', id=id, title = title, databases=databases, tables = tables, t_list = t_list, db_info=db_info)
+    return render_template('/no_major/create_table.html', id=id, title = title, databases=databases, tables = tables, t_list = t_list, db_info=db_info, dbms_schema = db_info[5])
 
 
 @login_check
@@ -412,6 +436,7 @@ def execute_query_no_major_drop_table(id):
             user_db.excute('drop table ' + request.form.get('drop_info'))
             user_db.excute('purge recyclebin')
         user_db.commit()
+        user_db.close()
         flash('Table 삭제 완료했습니다.')
         return redirect(url_for('.execute_query_no_major_drop_table', id=id))
 
@@ -420,36 +445,231 @@ def execute_query_no_major_drop_table(id):
     if db_info[0] == 'oracle':
         t_list = user_db.excuteAll('select tname from tab')
     if db_info[0] == 'mysql' or db_info[0] == 'maria':
-        t_list = tables
+        t_list = user_db.excuteAll(f'show tables from {db_info[5]}')
     user_db.close()
-    return render_template('/no_major/drop_db.html', id=id, title=title, db_info = db_info, databases = databases, tables = tables, t_list = t_list)
+    return render_template('/no_major/drop_db.html', id=id, title=title, db_info = db_info, databases = databases, tables = tables, t_list = t_list, dbms_schema = db_info[5])
 
 
 @login_check
-@dbide.route('/execute_query_no_major/select/<id>')
+@dbide.route('/execute_query_no_major/select/<id>', methods=['GET', 'POST'])
 def execute_query_no_major_select(id):
-    return render_template('/no_major/select.html', id=id)
+    cur = Database()
+    db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
+                             dbms_connect_username, dbms_schema, inner_num \
+                             from dbms_info \
+                             where db_id = %s and user_id=%s', (id, session.get('id')))
+
+    if not db_info:
+        flash('연결하려고 한 DBMS 정보는 사용자께서 소유하고 있지 않는 DBMS 입니다.')
+        return redirect(url_for('dbide.main'))
+
+    cur.close()
+
+    user_db = Database(dbms = db_info[0], host = db_info[1], port = db_info[2], user = db_info[4], \
+                       password = db_info[3], database = db_info[5])
+
+    if request.method == 'POST':
+        try :
+            if request.form.get('setting') == 'columns':
+                table_colums_info = []
+                for t in request.form.getlist('tables_info[]'):
+                    print(t)
+                    if db_info[0] == 'mysql' or db_info[0] == 'maria':
+                        column_info = user_db.excuteAll('desc ' + t)
+                        table_colums_info += [t + "." + c[0] for c in column_info]
+                    if db_info[0] == 'oracle':
+                        pass
+
+                # table_colums_info = [ti.__next__() for ti in table_colums_info]
+                print(table_colums_info)
+
+                return jsonify({'confirm' : True, 'column_info':table_colums_info})
+        except Exception as e:
+            print(e)
+            return jsonify({'confirm' : False})
+
+    databases, tables = user_db.show_databases_and_tables(db_info)
+
+    if db_info[0] == 'oracle':
+        t_list = user_db.excuteAll('select tname from tab')
+    if db_info[0] == 'mysql' or db_info[0] == 'maria':
+        t_list = user_db.excuteAll(f'show tables from {db_info[5]}')
+
+    user_db.close()
+
+    t_list = [i[0] for i in t_list]
+
+    return render_template('/no_major/select.html', id=id, db_info = db_info, databases = databases, tables = tables, dbms_schema = db_info[5], t_list = t_list)
 
 
 @login_check
-@dbide.route('/execute_query_no_major/insert/<id>')
+@dbide.route('/execute_query_no_major/insert/<id>', methods=['GET', 'POST'])
 def execute_query_no_major_insert(id):
+    cur = Database()
+    db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
+                             dbms_connect_username, dbms_schema, inner_num \
+                             from dbms_info \
+                             where db_id = %s and user_id=%s', (id, session.get('id')))
 
-    return render_template('/no_major/insert.html', id=id)
+    if not db_info:
+        flash('연결하려고 한 DBMS 정보는 사용자께서 소유하고 있지 않는 DBMS 입니다.')
+        return redirect(url_for('dbide.main'))
+
+    cur.close()
+
+    user_db = Database(dbms = db_info[0], host = db_info[1], port = db_info[2], user = db_info[4], \
+                       password = db_info[3], database = db_info[5])
+
+    if request.method == 'POST':
+        try:
+            if request.form.get('setting') == 'description':
+                if db_info[0] == 'mysql' or db_info[0] == 'maria':
+                    column_info = user_db.excuteAll('desc ' + request.form.get('table_name'))
+                if db_info[0] == 'oracle':
+                    column_info = user_db.excuteAll("select cname, coltype from col where tname = '" + request.form.get('table_name').upper() + "'")
+                
+                column_info = [[i[0], i[1]] for i in column_info]
+
+                user_db.close()
+
+                return jsonify({'confirm':True, 'column_info':str(column_info)})
+
+            if request.form.get('setting') == 'insert':
+                table_name = request.form.get('query').split(" ")[2].split("(")[0]
+                user_db.excute(request.form.get('query'))
+                user_db.commit()
+                user_db.close()
+                flash(table_name + ' 테이블에 데이터 삽입을 성공했습니다.')
+                return jsonify({'confirm':True})
+
+        except Exception as e:
+            print(e)
+            return jsonify({'confirm':False, 'msg':str(e)})
+
+    databases, tables = user_db.show_databases_and_tables(db_info)
+
+    if db_info[0] == 'oracle':
+        t_list = user_db.excuteAll('select tname from tab')
+    if db_info[0] == 'mysql' or db_info[0] == 'maria':
+        t_list = user_db.excuteAll(f'show tables from {db_info[5]}')
+
+    user_db.close()
+
+    return render_template('/no_major/insert.html', id=id, db_info = db_info, databases = databases, tables = tables, dbms_schema = db_info[5], t_list = t_list)
 
 
 @login_check
-@dbide.route('/execute_query_no_major/update/<id>')
+@dbide.route('/execute_query_no_major/update/<id>', methods=['GET', 'POST'])
 def execute_query_no_major_update(id):
+    cur = Database()
+    db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
+                             dbms_connect_username, dbms_schema, inner_num \
+                             from dbms_info \
+                             where db_id = %s and user_id=%s', (id, session.get('id')))
 
-    return render_template('/no_major/update.html', id=id)
+    if not db_info:
+        flash('연결하려고 한 DBMS 정보는 사용자께서 소유하고 있지 않는 DBMS 입니다.')
+        return redirect(url_for('dbide.main'))
+
+    cur.close()
+
+    user_db = Database(dbms = db_info[0], host = db_info[1], port = db_info[2], user = db_info[4], \
+                       password = db_info[3], database = db_info[5])
+
+    if request.method == 'POST':
+        try:
+            if request.form.get('setting') == 'description':
+                if db_info[0] == 'mysql' or db_info[0] == 'maria':
+                    column_info = user_db.excuteAll('desc ' + request.form.get('table_name'))
+                if db_info[0] == 'oracle':
+                    column_info = user_db.excuteAll("select cname, coltype from col where tname = '" + request.form.get('table_name').upper() + "'")
+                
+                column_info = [[i[0], i[1]] for i in column_info]
+
+                user_db.close()
+
+                return jsonify({'confirm':True, 'column_info':str(column_info)})
+
+            if request.form.get('setting') == 'update':
+                user_db.excute(request.form.get('query'))
+                user_db.commit()
+                user_db.close()
+
+                flash('테이블 ' + request.form.get('query').split(" ")[1] + '의 수정작업을 성공했습니다.')
+
+                return jsonify({'confirm' : True})
+
+        except Exception as e:
+            print(e)
+            return jsonify({'confirm':False, 'msg':str(e)})
+
+    databases, tables = user_db.show_databases_and_tables(db_info)
+
+    if db_info[0] == 'oracle':
+        t_list = user_db.excuteAll('select tname from tab')
+    if db_info[0] == 'mysql' or db_info[0] == 'maria':
+        t_list = user_db.excuteAll(f'show tables from {db_info[5]}')
+
+    user_db.close()
+    return render_template('/no_major/update.html', id=id, db_info = db_info, databases = databases, tables = tables, dbms_schema = db_info[5], t_list = t_list)
 
 
 @login_check
-@dbide.route('/execute_query_no_major/delete/<id>')
+@dbide.route('/execute_query_no_major/delete/<id>', methods=['GET', 'POST'])
 def execute_query_no_major_delete(id):
 
-    return render_template('/no_major/delete.html', id=id)
+    cur = Database()
+    db_info = cur.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
+                             dbms_connect_username, dbms_schema, inner_num \
+                             from dbms_info \
+                             where db_id = %s and user_id=%s', (id, session.get('id')))
+
+    if not db_info:
+        flash('연결하려고 한 DBMS 정보는 사용자께서 소유하고 있지 않는 DBMS 입니다.')
+        return redirect(url_for('dbide.main'))
+
+    cur.close()
+
+    user_db = Database(dbms = db_info[0], host = db_info[1], port = db_info[2], user = db_info[4], \
+                       password = db_info[3], database = db_info[5])
+
+    if request.method == 'POST':
+        try:
+            if request.form.get('setting') == 'description':
+                if db_info[0] == 'mysql' or db_info[0] == 'maria':
+                    column_info = user_db.excuteAll('desc ' + request.form.get('table_name'))
+                if db_info[0] == 'oracle':
+                    column_info = user_db.excuteAll("select cname, coltype from col where tname = '" + request.form.get('table_name').upper() + "'")
+                
+                column_info = [[i[0], i[1]] for i in column_info]
+
+                user_db.close()
+
+                return jsonify({'confirm':True, 'column_info':str(column_info)})
+
+            if request.form.get('setting') == 'delete':
+                user_db.excute(request.form.get('query'))
+                user_db.commit()
+                user_db.close()
+
+                flash('테이블 ' + request.form.get('query').split(" ")[2] + '의 삭제작업을 성공했습니다.')
+
+                return jsonify({'confirm' : True})
+
+        except Exception as e:
+            print(e)
+            return jsonify({'confirm':False, 'msg':str(e)})
+
+    databases, tables = user_db.show_databases_and_tables(db_info)
+
+    if db_info[0] == 'oracle':
+        t_list = user_db.excuteAll('select tname from tab')
+    if db_info[0] == 'mysql' or db_info[0] == 'maria':
+        t_list = user_db.excuteAll(f'show tables from {db_info[5]}')
+
+    user_db.close()
+
+    return render_template('/no_major/delete.html', id=id, db_info = db_info, databases = databases, tables = tables, dbms_schema = db_info[5], t_list = t_list)
 
 @dbide.route('/execute_test/')
 def excute_test():

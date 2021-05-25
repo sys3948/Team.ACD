@@ -16,7 +16,7 @@
       width: 100px;
     }
 
-    .colum-table{
+    .column-table{
       overflow: visible;
     }
   </style>
@@ -170,7 +170,15 @@
 
           if(document.getElementsByClassName('column-default-value')[i].value !== ''){
             // default value checked
-            create_query += " default " + document.getElementsByClassName('column-default-value')[i].value;
+            if(document.getElementsByClassName('column-type')[i].value === 'varchar' || 
+               document.getElementsByClassName('column-type')[i].value === 'varchar2' ||
+               document.getElementsByClassName('column-type')[i].value === 'text' || 
+               document.getElementsByClassName('column-type')[i].value === 'clob'){
+                 create_query += " default '" + document.getElementsByClassName('column-default-value')[i].value + "'";
+               }
+            else{
+              create_query += " default " + document.getElementsByClassName('column-default-value')[i].value;
+            }
           }
 
           if(body.rows.length > 1 && i !== body.rows.length-1){
@@ -220,12 +228,15 @@
             let table_info = response.table_info.replace("[[", "").replace("]]", "");
             table_info = table_info.replaceAll("], [", "//");
             table_info.split("//").forEach(element => {
+              console.log(element);
+              console.log('Default Value : ' + element.split(",")[4].replace("b","").replaceAll("'", "").replaceAll(" ", ""))
               let column_name;
               let type;
               let type_length;
               let null_able = false;
               let pk_able = false;
               let unique_able = false;
+              let default_value;
               let row = body.insertRow(body.rows.length);
               let cel0 = row.insertCell(0);
               let cel1 = row.insertCell(1);
@@ -260,6 +271,11 @@
                   if(element.split(",")[3].replaceAll("'", "").replaceAll(" ", "") === 'UNI'){
                     unique_able = true;
                   }
+                }
+                if(element.split(",")[4].replace("b","").replaceAll("'", "").replaceAll(" ", "") === 'None'){
+                  default_value = "";
+                } else {
+                  default_value = element.split(",")[4].replace("b","").replaceAll("'", "").replaceAll(" ", "");
                 }
 
                 if(type === 'tinyint'){
@@ -347,6 +363,24 @@
                 if(element.split(',')[3].replaceAll("'", "").replaceAll(" ", "").toLowerCase() === 'null'){
                   null_able = false;
                 }
+                if(element.split(",")[4].replace("b","").replaceAll("'", "").replaceAll(" ", "") === 'None'){
+                  default_value = "";
+                } else {
+                  default_value = element.split(",")[4].replace("b","").replaceAll("'", "").replaceAll(" ", "");
+                }
+                console.log('Oracle Default Values : ' + default_value);
+
+                console.log("제약조건 : " + element.split(',')[5].replaceAll("'", ""));
+                if(element.split(',')[5].replaceAll("'", "").replaceAll(" ", "") === 'U'){
+                  pk_able = false;
+                  unique_able = true;
+                }
+                if(element.split(',')[5].replaceAll("'", "").replaceAll(" ", "") === 'P'){
+                  pk_able = true;
+                  unique_able = false;
+                }
+
+
                 if(type === 'number'){
                   cel1.innerHTML =  '<div class="form-group select">' +
                                       '<select class="form-control column-type">' +
@@ -428,7 +462,7 @@
               }else{
                 cel5.innerHTML = '<input type="checkbox" class="form-control column-pk" value="primary key" />';
               }
-              cel6.innerHTML = '<input type="text" class="form-control input-colum column-default-value" placeholder="default 값 입력" value="" />';
+              cel6.innerHTML = '<input type="text" class="form-control input-colum column-default-value" placeholder="default 값 입력" value=' + default_value + ' >';
             });
             document.getElementById('table').style.display = 'block';
           }else{
