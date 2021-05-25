@@ -115,6 +115,14 @@
         
             $(".csv-error-text").text(error);
         },
+        is_selected_table:function(){
+            if($(this.modal).find(".table-opt option:selected").val() == undefined){
+                this.show_error("테이블을 선택해주세요.")
+                return false;
+            }
+            this.show_error("");
+            return true;
+        },
         set_progress:function(percent){
             $('.progress-bar').css('width', percent).attr('aria-valuenow',percent);
             $('.progress-bar-label').text(percent);

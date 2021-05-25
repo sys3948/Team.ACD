@@ -58,44 +58,78 @@ $(function(){
     var csv = $("#import-modal").CSV("{{id}}","import");
     csv.init();
     $("#next").click(function(){
-    
-    csv.set_progress_kind("업로드 중");
+        
+        if(!csv.is_selected_table()) return;
+        if(!check_file_validation("input[name=csv_file]"))  return;
 
-    var form_data = get_form_data();
-    $.ajax({
-      type : "post",
-      url : "/import_csv/{{id}}",
-      processData: false,
-      contentType: false,
-      enctype : 'multipart/form-data',
-      data : form_data,
-      xhr: function() {
-            var xhr = $.ajaxSettings.xhr();
-            xhr.upload.onprogress = function(e) { //progress 이벤트 리스너 추가
-                var percent = (e.loaded/e.total*100).toFixed(2);
-                csv.set_progress(percent+"%");
-                
-            };
-            return xhr;
-        },
-      success : (response) => {
-        var url = "/import_csv_progress/"+response.task_id;
-        csv.set_progress_kind("삽입 중");
-        csv.show_progress(url);        
-      }
+        csv.set_progress_kind("업로드 중");
+        var form_data = get_form_data();
+        $.ajax({
+        type : "post",
+        url : "/import_csv/{{id}}",
+        processData: false,
+        contentType: false,
+        enctype : 'multipart/form-data',
+        data : form_data,
+        xhr: function() {
+                var xhr = $.ajaxSettings.xhr();
+                xhr.upload.onprogress = function(e) { //progress 이벤트 리스너 추가
+                    var percent = (e.loaded/e.total*100).toFixed(2);
+                    csv.set_progress(percent+"%");
+                    
+                };
+                return xhr;
+            },
+        success : (response) => {
+            var url = "/import_csv_progress/"+response.task_id;
+            csv.set_progress_kind("삽입 중");
+            csv.show_progress(url);        
+        }
+        });
     });
+
+    $("input[name=csv_file]").change(function(){
+        check_file_validation($(this));
+
+    });
+    function check_file_validation(input_file){
+        /*
+            파일선택 했는지 또는 csv파일 맞는지 체크한다
+            Arg
+                input_file : input file을 구분할수 있는것 ex) "#csv_file" or $("#csv_file")
+            Return 
+                true : 유효성 검사 성공
+                false: 유효성 검사 실패
+        */
+       
+        var ext = $(input_file).val().split('.').pop().toLowerCase();
+        
+        //파일 입력하지 않으면
+        if($(input_file)[0].files.length == 0){
+            csv.show_error("파일을 선택해주세요.");
+            return false;
+        } 
+
+        if(ext != "csv"){
+            csv.show_error("csv파일만 선택해주세요.");
+            return false;
+        }
+        
+        csv.show_error("");
+        return true;
+    }
+
+
+    function get_form_data(){
+        var form_data = new FormData();
+        form_data.append("table_name",$("#import-modal .table-opt option:selected").val());
+        form_data.append("csv_file",$("input[name=csv_file]")[0].files[0]);
+        if($("#import-modal .database-opt").length > 0)
+            form_data.append("database_opt",$("#import-modal .database-opt option:selected").val());
+        return form_data;
+    }
+
 });
-
-function get_form_data(){
-    var form_data = new FormData();
-    form_data.append("table_name",$("#import-modal .table-opt option:selected").val());
-    form_data.append("csv_file",$("input[name=csv_file]")[0].files[0]);
-    if($("#import-modal .database-opt").length > 0)
-        form_data.append("database_opt",$("#import-modal .database-opt option:selected").val());
-    return form_data;
-}
-
-})();
 
 
 

@@ -72,6 +72,8 @@ $(function(){
 
     
     $("#export-btn").click(function(){
+
+        if(!csv.is_selected_table()) return;
         
         $.ajax({
           type : "post",
