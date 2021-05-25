@@ -1,8 +1,388 @@
 {% extends "/no_major/base.html" %}
 
+{% block stylesheet %}
+  {{ super() }}
+  <style>
+    .update-contents{
+      display: none;
+    }
+    #where-clause-block{
+      display: none;
+    }
+    .where-column-name {
+      margin: 0;
+      line-height: 2;
+    }
+    .update-check-block{
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+  </style>
+{% endblock %}
+
 {% block query_btn %}
   {% include "/include/_no_major_update_btn.html"%}
 {% endblock %}
 
 {% block execute %}
+  <div class="container">
+    <div class="container border border-top-0 border-right-0 border-left-0 border-secondary">
+      {# update 쿼리 실행 부분 #}
+      <form class="container mb-3" id="update-form">
+        <div class="form-group">
+          {% if t_list %}
+            <select class="form-control" id="update-table">
+              <option value="">수정할 테이블을 선택해주세요.</option>
+              {% for table in t_list %}
+                <option value="{{ table[0] }}">{{ table[0] }}</option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <h1>해당 데이터베이스에는 테이블이 존재하지 않습니다.</h1>
+          {% endif %}
+        </div>
+        <div class="update-contents">
+          <div class="column-box">
+            <h5>수정할 열에 대한 값을 입력해주세요.</h5>
+            <div class="form-group mt-1 pb-1 border border-left-0 border-right-0 border-top-0" id="update-column-contents">
+              {# update column list #}
+            </div>
+            <div class="form-group mt-2">
+              {# update query where clause #}
+              <div class="container text-right">
+                <button type="button" class="btn btn-warning text-light" id="where-clause-btn">Where clause(수정할 열의 범위 지정하기.)</button>
+              </div>
+              <div class="container mt-2" id="where-clause-block">
+                <h5>범위를 지정할 시 지정할 열에 체크박스를 클릭하고 해당 열에 대한 값을 입력하고 연산을 선택해주세요.</h5>
+                <div class="container" id="where-clause-query">
+                  {# where clause query에 대한 element들이 존재해야하는 부분. #}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="container text-right">
+            <input type="submit" class="btn btn-primary" id="update-submit" value="Update(Data 수정)" />
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="m-3">
+      <div class="alert alert-danger" id="alert-block" style="display: none;">
+        <div id="alert-msg"></div>
+      </div>
+    </div>
+    <div class="container">
+      {# 쿼리 결과 부분 & 쿼리 미리보기 부분 #}
+      <div class="container text-right">
+        <button type="button" class="btn btn-info" id="show-result-query">SQL Query 보기</button>
+      </div>
+      <div class="container mt-3">
+        <div class="alert alert-success" id="query-block" style="display: none;">
+          <div class="text-right">
+            <button type="button" class="btn" id="query-block-close">&times;</button>
+          </div>
+          <div id="result-query"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    $(function(){
+
+      let where_clause_able = true;
+
+      document.getElementById('update-table').onchange = (e) =>{
+
+        document.getElementById('where-clause-block').style.display = 'none';
+
+        if(document.getElementById('update-table').value === ""){
+          document.getElementsByClassName('update-contents')[0].style.display = 'none';
+          document.getElementById('alert-msg').innerHTML = '존재 하지 않는 테이블을 선택했습니다. 테이블을 선택해주세요.';
+          document.getElementById('alert-block').style.display = 'block';
+          return false;
+        }
+        
+        let update_column_html = '<div class="row border border-top-0 border-left-0 border-right-0 mb-2">'
+                                    +'<div class="col-md-5">'
+                                      + '<div class="row">'
+                                          + '<div class="col-md-6"><h6>Column Name</h6></div>'
+                                          + '<div class="col-md-6"><h6>Column Type</h6></div>'
+                                      +'</div>'
+                                    +'</div>'
+                                    + '<div class="col-md-7"><h6>Input Value</h6></div>'
+                                +'</div>';
+
+        document.getElementById('where-clause-query').innerHTML = "";
+
+        $.ajax({
+          type :'post',
+          url : location.pathname,
+          data : {"setting":"description","table_name":document.getElementById('update-table').value},
+          success : (response) => {
+            if(response.confirm){
+              response.column_info.replace("[[", "").replace("]]", "").replaceAll("], [", "//").split('//').forEach(element => {
+
+                update_column_html += '<div class="row update-column">'
+                                      + '<div class="col-md-5">'
+                                        + '<div class="row">'
+                                          + '<h6 class="update-column-name col-md-6">' 
+                                            +element.split(',')[0].replaceAll("'", "").replaceAll(" ", "")
+                                          + '</h6>'
+                                          + '<h6 class="update-column-type col-md-6">' 
+                                            +element.split(',')[1].replace("b", "").replaceAll("'", "").replaceAll(" ", "")
+                                          + '</h6>'
+                                        + '</div>'
+                                      + '</div>'
+                                      + '<div class="col-md-7">'
+                                        + '<input type="text" class="form-control update-column-value" data-type="'+ element.split(',')[1].replace("b", "").replaceAll("'", "").replaceAll(" ", "") +'" placeholder="열에 수정할 값을 작성해주세요." />'
+                                      + '</div>'
+                                   + '</div>';
+
+                document.getElementById('where-clause-query').innerHTML += '<div class="row where-block">'
+                                                                            + '<div class="col-sm-1 update-check-block">'
+                                                                              + '<input type="checkbox" class="update-check form-control" />'
+                                                                            + '</div>'
+                                                                            + '<div class="col-md-3">'
+                                                                              + '<h6 class="where-column-name">'+ element.split(',')[0].replaceAll("'", "").replaceAll(" ", "") +'</h6>'
+                                                                            + '</div>'
+                                                                            + '<div class="col-md-3">'
+                                                                              + '<select class="form-control compare-operator">'
+                                                                                + '<option>=</option>'
+                                                                                + '<option>!=</option>'
+                                                                                + '<option>></option>'
+                                                                                + '<option><</option>'
+                                                                                + '<option>>=</option>'
+                                                                                + '<option><=</option>'
+                                                                              + '</select>'
+                                                                            + '</div>'
+                                                                            + '<div class="col-md-5">'
+                                                                              + '<input type="text" class="form-control where-column-value" data-type="'+ element.split(',')[1].replace("b", "").replaceAll("'", "").replaceAll(" ", "") +'" placeholder="값을 입력해주세요." />'
+                                                                            + '</div>'
+                                                                          + '</div>'
+
+                if(response.column_info.replace("[[", "").replace("]]", "").replaceAll("], [", "//").split('//')[response.column_info.replace("[[", "").replace("]]", "").replaceAll("], [", "//").split('//').length - 1] !== element){
+                  document.getElementById('where-clause-query').innerHTML += '<div class="container mt-1 mb-1">'
+                                                                              +  '<select class="form-control logical-operator">'
+                                                                                + '<option value="">두 범위를 연결할 논리 연산자를 선택해주세요.<option>'
+                                                                                + '<option value="and">and<option>'
+                                                                                + '<option value="or">or<option>'
+                                                                              +  '</select>'
+                                                                          + '</div>'
+                }
+              });
+
+              document.getElementById('update-column-contents').innerHTML = update_column_html;
+              document.getElementsByClassName('update-contents')[0].style.display = "block";
+            }else{
+              document.getElementById('alert-block').style.display="block";
+              document.getElementById('alert-msg').innerHTML = response.msg;
+            }
+          }
+        });
+      }
+
+
+      document.getElementById('where-clause-btn').onclick = (e) => {
+
+        if(where_clause_able){
+          document.getElementById('where-clause-block').style.display = 'block';
+          where_clause_able = false;
+        }else{
+          document.getElementById('where-clause-block').style.display = 'none';
+          where_clause_able = true;
+        }
+
+
+      }
+
+      document.getElementById('update-form').onsubmit = (e) => {
+        e.preventDefault();
+        let set_clause = "";
+        let where_clause = "";
+        console.log('update Query Submit!!!');
+
+        for(let i = 0; i < document.getElementsByClassName('update-column').length; i++){
+          if(document.getElementsByClassName('update-column-value')[i].value !== ""){
+            if(set_clause === ""){
+
+              if(document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0] === "varchar" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "varchar2" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0] === "text" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0] === "datetime" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "clob"){
+                if(document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                  set_clause = document.getElementsByClassName('update-column-name')[i].innerText + "=to_date('" + document.getElementsByClassName('update-column-value')[i].value + "', 'YYYY-MM-DD HH24:MI:SS')";  
+                }else{
+                  set_clause = document.getElementsByClassName('update-column-name')[i].innerText + "='" + document.getElementsByClassName('update-column-value')[i].value + "'";
+                }
+              }else{
+                set_clause = document.getElementsByClassName('update-column-name')[i].innerText + "=" + document.getElementsByClassName('update-column-value')[i].value;
+              }
+            }else{
+              if(document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0] === "varchar" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "varchar2" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0] === "text" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0] === "datetime" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "clob"){
+                if(document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                  set_clause += ", " + document.getElementsByClassName('update-column-name')[i].innerText + "=to_date('" + document.getElementsByClassName('update-column-value')[i].value + "', 'YYYY-MM-DD HH24:MI:SS')";  
+                }else{
+                  set_clause += ", " + document.getElementsByClassName('update-column-name')[i].innerText + "='" + document.getElementsByClassName('update-column-value')[i].value + "'";
+                }
+              }else{
+                  set_clause += ", " + document.getElementsByClassName('update-column-name')[i].innerText + "=" + document.getElementsByClassName('update-column-value')[i].value;
+              }
+            }
+          }
+        }
+
+        for(let i = 0; i < document.getElementsByClassName('where-block').length; i++){
+          if(document.getElementsByClassName('update-check')[i].checked){
+
+            if(document.getElementsByClassName('where-column-value')[i].value !== ""){
+              if(document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0] === "varchar" ||
+                document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "varchar2" ||
+                document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0] === "text" ||
+                document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0] === "datetime" ||
+                document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date" ||
+                document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "clob"){
+                if(document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                  where_clause += document.getElementsByClassName('where-column-name')[i].innerText +" "+ document.getElementsByClassName('compare-operator')[i].value +" to_date("+ document.getElementsByClassName('where-column-value')[i].value + "', 'YYYY-MM-DD HH24:MI:SS') ";
+                  }else{
+                  where_clause += document.getElementsByClassName('where-column-name')[i].innerText +" "+ document.getElementsByClassName('compare-operator')[i].value +" '"+ document.getElementsByClassName('where-column-value')[i].value + "' ";
+                  }
+                }else{
+                  where_clause += document.getElementsByClassName('where-column-name')[i].innerText +" "+ document.getElementsByClassName('compare-operator')[i].value + " " + document.getElementsByClassName('where-column-value')[i].value + " ";
+                }
+            }
+            
+            if(document.getElementsByClassName('logical-operator')[i]){
+              console.log('logical operator able!!!');
+              where_clause += document.getElementsByClassName('logical-operator')[i].value + " ";
+            }
+          }
+
+        }
+
+        let update_query = "";
+
+        if(where_clause !== ""){
+          console.log('totla update query where clause!!!!!!');
+          update_query = "update " + document.getElementById('update-table').value + " set " + set_clause + ' where ' + where_clause;
+        }else{
+          console.log('totla update query not where clause!!!!!!');
+          update_query = "update " + document.getElementById('update-table').value + " set " + set_clause;
+        }
+
+        console.log("Write update Query! : " + update_query);
+
+
+        $.ajax({
+          type: 'post',
+          url : location.pathname,
+          data : {"setting" : "update", "query" : update_query},
+          success : (response) => {
+            if(response.confirm){
+              location.reload();
+            }else{
+              document.getElementById('alert-msg').innerHTML = response.msg + '<br /> 작성하신 쿼리는 다음과 같습니다. <br />' + update_query;
+              document.getElementById('alert-block').style.display = "block";
+            }
+          }
+        });
+      }
+
+      document.getElementById('show-result-query').onclick = (e) => {
+        let set_clause = "";
+        let where_clause = "";
+        console.log('update Query Submit!!!');
+
+        for(let i = 0; i < document.getElementsByClassName('update-column').length; i++){
+          if(document.getElementsByClassName('update-column-value')[i].value !== ""){
+            if(set_clause === ""){
+
+              if(document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0] === "varchar" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "varchar2" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0] === "text" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0] === "datetime" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "clob"){
+                if(document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                  set_clause = document.getElementsByClassName('update-column-name')[i].innerText + "=to_date('" + document.getElementsByClassName('update-column-value')[i].value + "', 'YYYY-MM-DD HH24:MI:SS')";  
+                }else{
+                  set_clause = document.getElementsByClassName('update-column-name')[i].innerText + "='" + document.getElementsByClassName('update-column-value')[i].value + "'";
+                }
+              }else{
+                set_clause = document.getElementsByClassName('update-column-name')[i].innerText + "=" + document.getElementsByClassName('update-column-value')[i].value;
+              }
+            }else{
+              if(document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0] === "varchar" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "varchar2" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0] === "text" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0] === "datetime" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date" ||
+                 document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "clob"){
+                if(document.getElementsByClassName('update-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                  set_clause += ", " + document.getElementsByClassName('update-column-name')[i].innerText + "=to_date('" + document.getElementsByClassName('update-column-value')[i].value + "', 'YYYY-MM-DD HH24:MI:SS')";  
+                }else{
+                  set_clause += ", " + document.getElementsByClassName('update-column-name')[i].innerText + "='" + document.getElementsByClassName('update-column-value')[i].value + "'";
+                }
+              }else{
+                  set_clause += ", " + document.getElementsByClassName('update-column-name')[i].innerText + "=" + document.getElementsByClassName('update-column-value')[i].value;
+              }
+            }
+          }
+        }
+
+        for(let i = 0; i < document.getElementsByClassName('where-block').length; i++){
+          if(document.getElementsByClassName('update-check')[i].checked){
+
+            if(document.getElementsByClassName('where-column-value')[i].value !== ""){
+              if(document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0] === "varchar" ||
+                document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "varchar2" ||
+                document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0] === "text" ||
+                document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0] === "datetime" ||
+                document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date" ||
+                document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "clob"){
+                if(document.getElementsByClassName('where-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                  where_clause += document.getElementsByClassName('where-column-name')[i].innerText +" "+ document.getElementsByClassName('compare-operator')[i].value +" to_date("+ document.getElementsByClassName('where-column-value')[i].value + "', 'YYYY-MM-DD HH24:MI:SS') ";
+                  }else{
+                  where_clause += document.getElementsByClassName('where-column-name')[i].innerText +" "+ document.getElementsByClassName('compare-operator')[i].value +" '"+ document.getElementsByClassName('where-column-value')[i].value + "' ";
+                  }
+                }else{
+                  where_clause += document.getElementsByClassName('where-column-name')[i].innerText +" "+ document.getElementsByClassName('compare-operator')[i].value + " " + document.getElementsByClassName('where-column-value')[i].value + " ";
+                }
+            }
+            
+            if(document.getElementsByClassName('logical-operator')[i]){
+              console.log('logical operator able!!!');
+              where_clause += document.getElementsByClassName('logical-operator')[i].value + " ";
+            }
+          }
+
+        }
+
+        let update_query = "";
+
+        if(where_clause !== ""){
+          console.log('totla update query where clause!!!!!!');
+          update_query = "update " + document.getElementById('update-table').value + " set " + set_clause + ' where ' + where_clause;
+        }else{
+          console.log('totla update query not where clause!!!!!!');
+          update_query = "update " + document.getElementById('update-table').value + " set " + set_clause;
+        }
+
+        document.getElementById('result-query').innerHTML = update_query;
+        document.getElementById('query-block').style.display = 'block';
+      }
+
+      document.getElementById('query-block-close').onclick = (e) => {
+        document.getElementById('query-block').style.display = 'none';
+      }
+
+
+    });
+  </script>
 {% endblock %}

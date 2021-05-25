@@ -87,6 +87,11 @@
           <a href="{{ url_for('dbide.execute_query_no_major', id=id) }}" class="btn btn-primary">비전공자</a>
         </div>
         <div class="container mt-3">
+          <div class="alert alert-info" id="schema-msg">
+            데이터베이스 <b class="text-dark" id="schema-info">{{dbms_schema}}</b>에 연결했습니다.
+          </div>
+        </div>
+        <div class="container mt-3">
           <div class="mt-2 mb-2">
             {% block query_btn %}
             {% endblock %}
@@ -99,4 +104,32 @@
       </div>
     </div>
   </div>
+  <script>
+    $(function(){
+      const tab_count = document.getElementsByClassName('connect-schema-btn').length;
+
+      for(let i=0; i< tab_count; i++){
+        document.getElementsByClassName('connect-schema-btn')[i].onclick =(e) => {
+          console.log(e.target.innerText);
+          console.log(location.pathname.split('/')[location.pathname.split('/').length - 1]);
+
+          $.ajax({
+            type : 'get',
+            url : '/connect_schema/' + location.pathname.split('/')[location.pathname.split('/').length - 1] + '/' + e.target.innerText,
+            success : (response) => {
+              if('error_msg' in response){
+                console.log(response.error_msg);
+                document.getElementById('schema-msg').classList.remove('alert-info');
+                document.getElementById('schema-msg').classList.add('alert-danger');
+                document.getElementById('schema-msg').innerHTML = response.error_msg;
+              }
+              if('msg' in response){
+                location.reload();
+              }
+            }
+          });
+        }
+      }
+    })
+  </script>
 {% endblock %}

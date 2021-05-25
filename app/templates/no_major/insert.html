@@ -1,8 +1,270 @@
 {% extends "/no_major/base.html" %}
 
+{% block stylesheet %}
+  {{ super() }}
+  <style>
+    .insert-contents{
+      display: none;
+    }
+  </style>
+{% endblock %}
+
 {% block query_btn %}
   {% include "/include/_no_major_insert_btn.html"%}
 {% endblock %}
 
 {% block execute %}
+  <div class="container">
+    <div class="container border border-top-0 border-right-0 border-left-0 border-secondary">
+      {# insert 쿼리 실행 부분 #}
+      <form class="container mb-3" id="insert-form">
+        <div class="form-group">
+          {% if t_list %}
+            <select class="form-control" id="insert-table">
+              <option value="">삽입할 테이블을 선택해주세요.</option>
+              {% for table in t_list %}
+                <option value="{{ table[0] }}">{{ table[0] }}</option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <h1>해당 데이터베이스에는 테이블이 존재하지 않습니다.</h1>
+          {% endif %}
+        </div>
+        <div class="insert-contents">
+          <div class="column-box">
+            <h5>삽입할 열에 대한 값을 입력해주세요.</h5>
+            <div class="form-group mt-1" id="insert-column-contents">
+            </div>
+          </div>
+          <div class="container text-right">
+            <input type="submit" class="btn btn-primary" id="insert-submit" value="Insert(Data 삽입)" />
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="m-3">
+      <div class="alert alert-danger" id="alert-block" style="display: none;">
+        <div id="alert-msg"></div>
+      </div>
+    </div>
+    <div class="container">
+      {# 쿼리 결과 부분 & 쿼리 미리보기 부분 #}
+      <div class="container text-right">
+        <button type="button" class="btn btn-info" id="show-result-query">SQL Query 보기</button>
+      </div>
+      <div class="container mt-3">
+        <div class="alert alert-success" id="query-block" style="display: none;">
+          <div class="text-right">
+            <button type="button" class="btn" id="query-block-close">&times;</button>
+          </div>
+          <div id="result-query"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    $(function(){
+
+      document.getElementById('insert-table').onchange = (e) =>{
+        let insert_column_html = '<div class="row border border-top-0 border-left-0 border-right-0 mb-2">'
+                                    +'<div class="col-md-5">'
+                                      + '<div class="row">'
+                                          + '<div class="col-md-6"><h6>Column Name</h6></div>'
+                                          + '<div class="col-md-6"><h6>Column Type</h6></div>'
+                                      +'</div>'
+                                    +'</div>'
+                                    + '<div class="col-md-7"><h6>Input Value</h6></div>'
+                                +'</div>';
+
+        $.ajax({
+          type :'post',
+          url : location.pathname,
+          data : {"setting":"description","table_name":document.getElementById('insert-table').value},
+          success : (response) => {
+            console.log(response);
+            if(response.confirm){
+              response.column_info.replace("[[", "").replace("]]", "").replaceAll("], [", "//").split('//').forEach(element => {
+                console.log(element);
+                insert_column_html += '<div class="row insert-column">'
+                                      + '<div class="col-md-5">'
+                                        + '<div class="row">'
+                                          + '<h6 class="insert-column-name col-md-6">' 
+                                            +element.split(',')[0].replaceAll("'", "").replaceAll(" ", "")
+                                          + '</h6>'
+                                          + '<h6 class="insert-column-type col-md-6">' 
+                                            +element.split(',')[1].replace("b", "").replaceAll("'", "").replaceAll(" ", "")
+                                          + '</h6>'
+                                        + '</div>'
+                                      + '</div>'
+                                      + '<div class="col-md-7">'
+                                        + '<input type="text" class="form-control insert-column-value" data-type="'+ element.split(',')[1].replace("b", "").replaceAll("'", "").replaceAll(" ", "") +'" placeholder="열에 삽입할 값을 작성해주세요." />'
+                                      + '</div>'
+                                   + '</div>';
+              });
+
+              document.getElementById('insert-column-contents').innerHTML = insert_column_html;
+              document.getElementsByClassName('insert-contents')[0].style.display = "block";
+            }else{
+              document.getElementById('alert-block').style.display="block";
+              document.getElementById('alert-msg').innerHTML = response.msg;
+            }
+          }
+        });
+      }
+
+      document.getElementById('insert-form').onsubmit = (e) => {
+        e.preventDefault();
+        let insert_columns = "";
+        let insert_columns_value = "";
+        console.log('Insert Query Submit!!!');
+
+        for(let i = 0; i < document.getElementsByClassName('insert-column').length; i++){
+          if(document.getElementsByClassName('insert-column-value')[i].value !== ""){
+            if(insert_columns_value === "" && insert_columns === ""){
+              insert_columns = document.getElementsByClassName('insert-column-name')[i].innerText;
+              if(document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0] === "varchar" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "varchar2" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0] === "text" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0] === "datetime" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                if(document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                  insert_columns_value = "to_date('" + document.getElementsByClassName('insert-column-value')[i].value + "', 'YYYY-MM-DD HH24:MI:SS')";  
+                }else{
+                  insert_columns_value = "'" + document.getElementsByClassName('insert-column-value')[i].value + "'";
+                }
+              }else{
+                if(document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "clob"){
+                  if(typeof(document.getElementsByClassName('insert-column-value')[i].value) === 'string'){
+                    insert_columns_value = "'" + document.getElementsByClassName('insert-column-value')[i].value + "'";
+                  }else{
+                    insert_columns_value = document.getElementsByClassName('insert-column-value')[i].value;
+                  }
+                }else{
+                  insert_columns_value = document.getElementsByClassName('insert-column-value')[i].value;
+                }
+              }
+            }else{
+              insert_columns += "," + document.getElementsByClassName('insert-column-name')[i].innerText;
+              if(document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0] === "varchar" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "varchar2" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0] === "text" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0] === "datetime" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                if(document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                  insert_columns_value += ", to_date('" + document.getElementsByClassName('insert-column-value')[i].value + "', 'YYYY-MM-DD HH24:MI:SS')";  
+                }else{
+                  insert_columns_value += ", '" + document.getElementsByClassName('insert-column-value')[i].value + "'";
+                }
+              }else{
+                if(document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "clob"){
+                  if(typeof(document.getElementsByClassName('insert-column-value')[i].value) === 'string'){
+                    insert_columns_value +=",'" + document.getElementsByClassName('insert-column-value')[i].value + "'";
+                  }else{
+                    insert_columns_value +="," + document.getElementsByClassName('insert-column-value')[i].value;
+                  }
+                }else{
+                  insert_columns_value +="," + document.getElementsByClassName('insert-column-value')[i].value;
+                }
+              }
+            }
+          }
+        }
+
+        if(insert_columns === "" && insert_columns_value === ""){
+          document.getElementById('alert-msg').innerHTML = "모든 열에 입력한 값이 없습니다. 값을 입력해주세요.";
+          document.getElementById('alert-block').style.display = "block";
+          return false;
+        }
+
+        const insert_query = "insert into "+ document.getElementById('insert-table').value +"("+insert_columns+") values("+insert_columns_value+")";
+
+        console.log("Write Insert Query! : " + insert_query);
+
+        $.ajax({
+          type: 'post',
+          url : location.pathname,
+          data : {"setting" : "insert", "query" : insert_query},
+          success : (response) => {
+            if(response.confirm){
+              location.reload();
+            }else{
+              document.getElementById('alert-msg').innerHTML = response.msg + '<br /> 작성하신 쿼리는 다음과 같습니다. <br />' + insert_query;
+              document.getElementById('alert-block').style.display = "block";
+            }
+          }
+        })
+      }
+
+      document.getElementById('show-result-query').onclick = (e) => {
+        let insert_columns = "";
+        let insert_columns_value = "";
+        document.getElementById('query-block').style.display = 'block';
+
+        if(document.getElementById('insert-table').value === ""){
+          document.getElementById('result-query').innerHTML = '테이블을 선택하지 않았습니다. 테이블을 선택 후에 열에 값을 입력한 후에 SQL Query 보기 버튼을 클릭해주시면 확인할 수 있을겁니다.';
+          return false;
+        }
+
+        for(let i = 0; i < document.getElementsByClassName('insert-column').length; i++){
+          if(document.getElementsByClassName('insert-column-value')[i].value !== ""){
+            if(insert_columns_value === "" && insert_columns === ""){
+              insert_columns = document.getElementsByClassName('insert-column-name')[i].innerText;
+              if(document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0] === "varchar" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "varchar2" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0] === "text" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0] === "datetime" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                if(document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                  insert_columns_value = "to_date('" + document.getElementsByClassName('insert-column-value')[i].value + "', 'YYYY-MM-DD HH24:MI:SS')";  
+                }else{
+                  insert_columns_value = "'" + document.getElementsByClassName('insert-column-value')[i].value + "'";
+                }
+              }else{
+                if(document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "clob"){
+                  if(typeof(document.getElementsByClassName('insert-column-value')[i].value) === 'string'){
+                    insert_columns_value = "'" + document.getElementsByClassName('insert-column-value')[i].value + "'";
+                  }else{
+                    insert_columns_value = document.getElementsByClassName('insert-column-value')[i].value;
+                  }
+                }else{
+                  insert_columns_value = document.getElementsByClassName('insert-column-value')[i].value;
+                }
+              }
+            }else{
+              insert_columns += "," + document.getElementsByClassName('insert-column-name')[i].innerText;
+              if(document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0] === "varchar" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "varchar2" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0] === "text" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0] === "datetime" ||
+                 document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                if(document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "date"){
+                  insert_columns_value += ", to_date('" + document.getElementsByClassName('insert-column-value')[i].value + "', 'YYYY-MM-DD HH24:MI:SS')";  
+                }else{
+                  insert_columns_value += ", '" + document.getElementsByClassName('insert-column-value')[i].value + "'";
+                }
+              }else{
+                if(document.getElementsByClassName('insert-column-value')[i].dataset.type.split("(")[0].toLowerCase() === "clob"){
+                  if(typeof(document.getElementsByClassName('insert-column-value')[i].value) === 'string'){
+                    insert_columns_value +=",'" + document.getElementsByClassName('insert-column-value')[i].value + "'";
+                  }else{
+                    insert_columns_value +="," + document.getElementsByClassName('insert-column-value')[i].value;
+                  }
+                }else{
+                  insert_columns_value +="," + document.getElementsByClassName('insert-column-value')[i].value;
+                }
+              }
+            }
+          }
+        }
+
+        document.getElementById('result-query').innerHTML = "insert into "+ document.getElementById('insert-table').value +"("+insert_columns+") values("+insert_columns_value+")";
+      }
+
+      document.getElementById('query-block-close').onclick = (e) => {
+        document.getElementById('query-block').style.display = 'none';
+      }
+
+
+    });
+  </script>
 {% endblock %}
