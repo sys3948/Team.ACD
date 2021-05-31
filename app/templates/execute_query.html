@@ -63,7 +63,11 @@
 {% block main %}
   <div class="row container">
     <div class="col-md-4 border border-top-0 border-bottom-0 border-left-0 q-height">
-      <h2>테이블 리스트</h2>
+      {% if db_info.0 != 'mongo' %}
+        <h2>테이블 리스트</h2>
+      {% else %}
+        <h2>Collections</h2>
+      {% endif %}
       <div id="table-list">
         {% include 'include/table_nav.html' %}
       </div>
@@ -84,13 +88,21 @@
           {% endif %}
           <!--sql editor-->
           <div class="border">
-            <textarea rows="4"  cols="50" id="edit"></textarea>
+            {% if db_info.0 != 'mongo'%}
+              <textarea rows="4"  cols="50" id="edit" dbms="rdbms"></textarea>
+            {% else %}
+              <textarea rows="4"  cols="50" id="edit" dbms="mongo"></textarea>
+            {% endif %}
           </div>
           
           <div class="mt-2 mb-2 text-right">
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#import-modal">Import CSV</button>
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#export-modal">Export CSV</button>
-            <button type="button" class="btn btn-primary" id="result">결과</button>
+            {% if db_info.0 != 'mongo' %}
+              <button type="button" class="btn btn-primary" url="/execute_query_result/{{id}}" id="result">결과</button>
+            {% else %}  
+              <button type="button" class="btn btn-primary" url="/execute_mongo_query_result/{{id}}" id="result">결과</button>
+            {% endif %}
             
           </div>
         </div>
@@ -107,6 +119,9 @@
         <li class="nav-item">
             <a href="#explain" class="nav-link text-dark font-weight-bold" data-toggle="tab">실행계획</a>
         </li>
+        <li class="nav-item">
+          <a href="#logging" class="nav-link text-dark font-weight-bold" data-toggle="tab">로그</a>
+        </li>
       </ul>
 
       <!--탭 내용-->
@@ -116,8 +131,10 @@
           {% include 'include/query_result.html' %}
         </div>
         <!--실행계획-->
-        <div class="tab-pane fade" id="explain">
-            
+        <div class="tab-pane fade" id="explain"></div>
+        <!--로그-->
+        <div class="tab-pane fade" id="logging">
+            {% include 'include/logging.html' %}
         </div>
       </div>
       
@@ -143,32 +160,53 @@ initAutoComplete();
 
 $("#result").click(function(){
 
+  var url = $(this).attr("url");
+  
   $.ajax({
     type : "post",
-    url : "/execute_query_result/{{id}}",
+    url : url,
     data : {'query' : editor.getValue()},
     success : (response) => {
       $("#alert-box").empty();
       
-
       for(var msg of response.msg_list){
-       
-
-          if(msg.error_msg != undefined){
-             createMessage(msg.error_msg,'alert-danger');
-          }else{
-             createMessage(msg,'alert-info');
-          }
+          if(msg.error_msg != undefined) createMessage(msg.error_msg,'alert-danger');
+          else createMessage(msg,'alert-info');
       }
 
-      if(response.results != undefined){
-        updateResult(response.results,response.tables);
-        var exp_results = response.explain;
-        if(response.dbms == "mysql" || response.dbms == "maria")
-            exp_results = JSON.parse(response.explain);
-        
-        $("#explain").show_explain(dbms=response.dbms,exp_results=exp_results);
+      console.log("dbms: "+response.dbms);
+      if(response.dbms == "mongo"){
+         
+         updateTables(response.tables);
+         if(response.result){// mongodb select때만
+            
+            updateJsonResult(response.result);
+            //실행계획 있은 실행, mongodb find()에만 실행계획 있다
+            if(response.explain != undefined) $("#explain").append("<pre>"+JSON.stringify(response.explain,null,4)+"</pre>")
+            
+         }else{
+            $("#query-result").empty();
+         }
+
+      }else{ //RDBMS
+        //SELECT문만 실행됨
+        if(response.results != undefined){
+          
+          updateResult(response.results);
+          updateTables(response.tables);
+          var exp_results = response.explain;
+          if(response.dbms == "mysql" || response.dbms == "maria")
+              exp_results = JSON.parse(response.explain);
+          
+          $("#explain").show_explain(dbms=response.dbms,exp_results=exp_results);
+        }else{
+          $("#query-result").empty();
+        }
       }
+
+      //로그 내용 있으면
+      if(response.logs != undefined) updateLog(response.logs)
+
       //테이블 자동완성 초기화
       initAutoComplete();
     
@@ -187,15 +225,43 @@ function createMessage(msg,class_name){
       $("#alert-box").append(alert);
 }
 
-//쿼리실행 결과 업데이트
-function updateResult(results,tables){
-  $("#table-list").empty();
-  $("#query-result").empty();
-
-  $("#query-result").append(results);
-  $("#table-list").append(tables);
-
+//json된 결과 업데이트
+function updateJsonResult(json_arr){
+  var str_json = "";
+  for(var json of JSON.parse(json_arr)){
+    str_json += JSON.stringify(json);
+  }
+  updateResult(str_json);
 }
+
+
+//쿼리실행 결과 업데이트
+function updateResult(results){
+  $("#query-result").empty();
+  $("#query-result").append(results);
+}
+
+
+//테이블 목록 업데이트
+function updateTables(tables){
+  $("#table-list").empty();
+  $("#table-list").append(tables);
+}
+
+//로그 업데이트
+function updateLog(logs){
+  $("#logging").empty();
+  $("#logging").append(logs);
+}
+
+//로그행 클릭시
+$(document).on("click",".clicked-log",function(){
+  var new_sql = $(this).children().last().text();
+  var old_sql = editor.getValue();
+  editor.setValue(old_sql+new_sql+"\n");
+  editor.focus();
+
+});
 
 function initSqlEditor(){
   var editor = CodeMirror.fromTextArea(document.getElementById('edit'), {
@@ -211,11 +277,14 @@ function initSqlEditor(){
             lineWrapping: true,
     });
     editor.on('keyup', function(editor, event){
-            console.log(event.keyCode);
+            
+          if($("#edit").attr("dbms") != "mongo"){ //몽고디비 아니면 자동완성 실행
+
             // enter,backspace,세미콜론,위아래 방향키 아니면 자동완성 
             if(event.keyCode!=13 && event.keyCode != 8 && 
               event.keyCode != 186 && event.keyCode!=38 && event.keyCode != 40 && event.keyCode != 32)
               CodeMirror.commands.autocomplete(editor);
+          }    
     });
 
     return editor;

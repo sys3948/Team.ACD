@@ -1,0 +1,18 @@
+<table class="table">
+    <thead>
+      <tr>
+          <th>시간</th>
+          <th>상태</th>
+          <th>SQL</th>
+      </tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+            <tr class="clicked-log" style="cursor: pointer;">
+                <td class="col-md-4">{{log.0}}</td>
+                <td class="col-md-2">{{log.1}}</td>
+                <td class="col-md-8">{{log.2}}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>

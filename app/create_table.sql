@@ -32,6 +32,16 @@ create table delete_user(
   stampdate datetime
 );
 
+create table sql_log(
+  id int auto_increment primary key,
+  dbms_info_id int null,
+  sql_text  text not null,
+  status char(5) not null,
+  stampdatetime DATETIME,
+  foreign key(dbms_info_id) references dbms_info(db_id) on delete SET NULL
+)
+
+
 create index users on  user(user_id, email);
 
 -- DROP TRIGGER IF EXISTS delete_user_trg;

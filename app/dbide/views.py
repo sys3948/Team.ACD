@@ -4,9 +4,11 @@
 #from flask import ...
 from flask import current_app, flash, json, render_template, request, session, url_for, redirect, jsonify,Response,send_file,after_this_request
 from . import dbide
+from .log import Log
 import mysql.connector as mysql
 from ..database import Database
 from ..decorate import login_check,connect_db
+
 from datetime import datetime
 import re
 import sqlparse
@@ -14,6 +16,10 @@ from app.celery import async_import_csv,async_export_csv
 import os 
 import io
 from werkzeug.utils import secure_filename
+from pymongo import MongoClient as Mongo
+import pymongo
+
+
 
 
 
@@ -142,31 +148,39 @@ def delete_dbms(id):
 @connect_db
 def execute_query(id,dbms_info):
     '''
-        쿼리 실행화면
+        전공자 oracle,mysql,mariadb 쿼리 실행화면
     '''
-    #사용자가 연결한 db object
-    user_db = dbms_info.get('user_db')
     #info_dbms테이블에 select 한 결과
     db_info = dbms_info.get('db_info')
     
-
+    user_db = dbms_info.get('user_db')
     databases,tables = user_db.show_databases_and_tables(db_info)    
-
     user_db.close()
+
+    log = Log()
+    logs = log.read_logs(id)
+    log.close_db_connect()
     
-    return render_template('execute_query.html',tables=tables,id=id,databases=databases,db_info=db_info)
+    return render_template('execute_query.html',tables=tables,id=id,databases=databases,db_info=db_info,logs=logs)
     
+
+
+
 @login_check
 @dbide.route('/execute_query_result/<id>',methods=['POST'])
 @connect_db
 def execute_query_result(id,dbms_info):
     '''
-        쿼리 비동기 처리후 결과 반환
+        oracle,mysql,mariadb 쿼리 비동기 처리후 결과 반환
     '''
+    #dbms_info 테이블 정보
     user_db = dbms_info.get('user_db')
     db_info = dbms_info.get('db_info')
 
     query = request.form.get('query')
+
+    #log 객체 생성
+    log = Log()
 
     json = {}
     msg_list = []
@@ -182,31 +196,101 @@ def execute_query_result(id,dbms_info):
             if sql_type == 'SELECT':
 
                 results = user_db.excuteAll(sql)
-                
                 columns = [col[0] for col in user_db.get_cursor().description ]
                 
-                #전체데이터베이스 explain
+                #rdbms explain
                 json['explain'] = user_db.show_explain(sql)
                 json['dbms']   = user_db.dbms
                 json['results'] = render_template('include/query_result.html',results=results,columns=columns,sql_type=sql_type)
             else:    
-                results = user_db.excute(sql)
+                
+                results=user_db.excute(sql)
                 user_db.commit()
-
+            
             msg_list.append(f'{sql}<br>쿼리실행 성공')    
+
+            #sql 실행성공 로깅
+            log.write_log(id,sql,"성공")
+
         except Exception as e:
             print(e)
             msg_list.append({'error_msg':f'{sql}<br>쿼리실행 실패<br>{e}'})
+            #sql 실행실패 로깅
+            log.write_log(id,sql,"실패")        
+
             break
+        
         
     databases,tables = user_db.show_databases_and_tables(db_info)   
 
-    user_db.close()
-
     json['tables']   = render_template('include/table_nav.html',tables=tables,databases=databases,db_info=db_info)
+    json['logs']     = render_template('include/logging.html',logs=log.read_logs(id))
     json['msg_list'] = msg_list
+
+    user_db.close()
+    log.close_db_connect()
     return jsonify(json)
 
+@login_check
+@dbide.route('/execute_mongo_query_result/<id>',methods=['POST'])
+@connect_db
+def execute_mongo_query_result(id,dbms_info):
+    '''
+        mongodb 쿼리실행
+    '''
+    #dbms_info 테이블 정보
+    user_db = dbms_info.get('user_db')
+    db_info = dbms_info.get('db_info')
+
+    query_string = request.form.get('query')    
+
+    context = {} # response 데이터
+    converted_list = []
+    msg_list = [] #성공메시지 또는 error 메시지
+
+    #로그 객체 생성
+    log = Log()
+
+    for query in sqlparse.split(query_string):
+        query = query.replace(";","")
+        try:
+            #쿼리 결과
+            result,converted_list,explain = user_db.excute_query_mongo_to_pymongo(query)
+
+            if explain: #실행계획 있은 실행, mongodb find()에만 실행계획 있다
+                context['explain'] = explain
+            context['result'] = result
+
+            msg_list.append(f'{query}<br>쿼리실행 성공') 
+
+            #몽고 쿼리 실행성공 로깅
+            log.write_log(id,query,"성공")
+               
+        except Exception as e:
+            error = str(e)
+            for el in converted_list:
+                error.replace(el[0],el[1])
+            print(error)
+            msg_list.append({'error_msg':f'{query}<br>쿼리실행 실패<br>{e}'})
+
+            #몽고 쿼리 실행실패 로깅
+            log.write_log(id,query,"실패")
+            break
+    
+    databases,tables = user_db.show_databases_and_tables(db_info)
+    
+    
+    context['tables']   = render_template('include/table_nav.html',tables=tables,databases=databases,db_info=db_info)
+    context['dbms']     = "mongo"
+    context['msg_list'] = msg_list
+    context['logs']     = render_template('include/logging.html',logs=log.read_logs(id))
+
+    user_db.close()
+    log.close_db_connect()
+
+    return jsonify(context)   
+
+     
 
 @login_check
 @dbide.route('/ajax_request_tables/<id>/<database>')
@@ -295,7 +379,6 @@ def import_csv(id,dbms_info):
     return jsonify({'task_id':task.id})
 
 #테이블 데이터를 csv 파일로 저장
-
 @login_check
 @dbide.route('/export_csv/<id>',methods=['POST'])
 @connect_db
