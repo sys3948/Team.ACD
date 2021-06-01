@@ -19,8 +19,11 @@
                         </select><br>
 
                     {% endif %}
-
-                    <label>테이블 선택</label><br>
+                    {% if db_info.0 != "mongo" %}
+                        <label>테이블 선택</label><br>
+                    {% else %}    
+                        <label>Collection 선택</label><br>
+                    {% endif %}    
                     <select class="form-control table-opt"  name="table-opt">
                         {% for table in tables %}
                             <option>{{table.0}}</option>
