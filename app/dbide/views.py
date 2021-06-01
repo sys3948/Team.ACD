@@ -694,20 +694,29 @@ def execute_query_no_major_select(id):
             if request.form.get('setting') == 'columns':
                 table_colums_info = []
                 for t in request.form.getlist('tables_info[]'):
-                    print(t)
                     if db_info[0] == 'mysql' or db_info[0] == 'maria':
                         column_info = user_db.excuteAll('desc ' + t)
                         table_colums_info += [t + "." + c[0] for c in column_info]
                     if db_info[0] == 'oracle':
-                        pass
+                        column_info = user_db.excuteAll("select cname, coltype from col where tname = '" + t.upper() + "'")
+                        table_colums_info += [t + "." + c[0] for c in column_info]
 
-                # table_colums_info = [ti.__next__() for ti in table_colums_info]
-                print(table_colums_info)
+                user_db.close()
 
                 return jsonify({'confirm' : True, 'column_info':table_colums_info})
+
+            if request.form.get('setting') == 'select':
+                result_query = user_db.excuteAll(request.form.get('query'))
+                columns = [columns[0] for columns in user_db.get_cursor().description]
+                explain = user_db.show_explain(request.form.get('query'))
+                # user_db.close()
+                result_query_template = render_template('include/query_result.html', results = result_query, columns = columns, sql_type = 'SELECT')
+
+                return jsonify({'confirm' : True, 'results' : result_query_template, 'explain' : explain, 'dbms':db_info[0], 'msg' : '쿼리 실행에 성공했습니다.'})
         except Exception as e:
             print(e)
-            return jsonify({'confirm' : False})
+            user_db.close()
+            return jsonify({'confirm' : False, 'msg' : str(e)})
 
     databases, tables = user_db.show_databases_and_tables(db_info)
 

@@ -6,6 +6,15 @@
     .label{
       line-height: 2;
     }
+    .select-on-clause{
+      display: none;
+    }
+    #alert-danger-block {
+      display: none;
+    }
+    #alert-info-block {
+      display: none;
+    }
   </style>
 {% endblock %}
 
@@ -14,120 +23,474 @@
 {% endblock %}
 
 {% block execute %}
+  <div class="mt-3 container border border-left-0 border-right-0 border-top-0">
+    <form id="select-form">
+      <div class="select-columns mb-1">
+        {# column block #}
+        <div class="row select-label mt-1">
+          <h6 class="font-weight-bold col-md-6 label">조회할 열을 선택해주세요.</h6>
+          <button class="btn btn-success col-md-1" id="column-plus" type="button">+</button>
+          <button class="btn btn-danger col-md-1 ml-1" id="column-sub" type="button">-</button>
+        </div>
+        <div class="select-column-block mt-2 mb-2">
+          <!-- <select class="form-control col-md-7 mb-1 table-column">
+            <option>Select Column</option>
+          </select> -->
+        </div>
+      </div>
+      <div class="select-tables border border-left-0 border-right-0">
+        {# from clause block #}
+        <div class="row select-label mt-1">
+          <h6 class="font-weight-bold col-md-6 label">조회할 테이블을 선택해주세요.</h6>
+          <button class="btn btn-success col-md-1" id="table-plus" type="button">+</button>
+          <button class="btn btn-danger col-md-1 ml-1" id="table-sub" type="button">-</button>
+        </div>
+        <div class="select-tables-block mt-2 mb-2">
+          <select class="form-control col-md-7 mb-1 table-select" onchange="table_select_change_event()">
+            <option value="">테이블을 선택해주세요.</option>
+            {% for tables in t_list %}
+              <option value="{{tables}}">{{tables}}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="select-on-clause border border-left-0 border-right-0 border-top-0">
+        {# on clause block #}
+        <div class="row select-where-label mt-1">
+          <h6 class="font-weight-bold col-md-8 label">조회할 테이블들의 결합할 조건을 입력해주세요.</h6>
+          <button class="btn btn-success col-md-1" id="on-clause-plus" type="button">+</button>
+          <button class="btn btn-danger col-md-1 ml-1" id="on-clause-sub" type="button">-</button>
+        </div>
+        <div class="select-on-clause-block mt-2 mb-2">
+          {# on clause conditional #}
+        </div>
+      </div>
+      <div class="select-where-clause border border-left-0 border-right-0 border-top-0">
+        {# where clause block #}
+        <div class="row select-where-label mt-1">
+          <div class="col-md-1">
+            <input type="checkbox" class="form-control" id="where-check" />
+          </div>
+          <h6 class="font-weight-bold col-md-8 label">조회할 테이블의 범위(조건)를 입력해주세요.</h6>
+          <button class="btn btn-success col-md-1" id="where-clause-plus" type="button">+</button>
+          <button class="btn btn-danger col-md-1 ml-1" id="where-clause-sub" type="button">-</button>
+        </div>
+        <div class="select-where-clause-block mt-2 mb-2">
+          {# where clause conditional #}
+        </div>
+      </div>
+      <div class="select-group-clause border border-left-0 border-right-0 border-top-0">
+        {# group clause block #}
+        <div class="row select-label mt-1">
+          <div class="col-md-1">
+            <input type="checkbox" class="form-control" id="group-check" />
+          </div>
+          <h6 class="font-weight-bold col-md-6 label">그룹화할 열을 선택해주세요.</h6>
+          <button class="btn btn-success col-md-1" id="group-plus" type="button">+</button>
+          <button class="btn btn-danger col-md-1 ml-1" id="group-sub" type="button">-</button>
+        </div>
+        <div class="group-clause-block mt-2 mb-2">
+          {# group clause conditional #}
+        </div>
+      </div>
+      <div class="select-having-clause border border-left-0 border-right-0 border-top-0">
+        {# having clause block #}
+        <div class="row select-label mt-1">
+          <div class="col-md-1">
+            <input type="checkbox" class="form-control" id="having-check" />
+          </div>
+          <h6 class="font-weight-bold col-md-8 label">그룹의 조건을 입력해주세요.</h6>
+          <button class="btn btn-success col-md-1" id="having-clause-plus" type="button">+</button>
+          <button class="btn btn-danger col-md-1 ml-1" id="having-clause-sub" type="button">-</button>
+        </div>
+        <div class="select-having-clause-block mt-2 mb-2">
+          {# having clause conditional #}
+        </div>
+      </div>
+      <div class="select-orderby-clause border border-left-0 border-right-0 border-top-0">
+        {# order by clause #}
+        <div class="row select-label mt-1">
+          <div class="col-md-1">
+            <input type="checkbox" class="form-control" id="order-by-check" />
+          </div>
+          <h6 class="font-weight-bold col-md-8 label">행의 정렬 조건을 입력해주세요.</h6>
+          <button class="btn btn-success col-md-1" id="order-by-clause-plus" type="button">+</button>
+          <button class="btn btn-danger col-md-1 ml-1" id="order-by-clause-sub" type="button">-</button>
+        </div>
+        <div class="select-order-by-clause-block mt-2 mb-2">
+          {# order by clause conditional #}
+        </div>
+      </div>
+      <div class="container text-right mt-2 mb-3">
+        <input type="submit" class="btn btn-primary" value="Select(조회)" />
+      </div>
+    </form>
+  </div>
   <div class="mt-3 container">
-    <div class="select-columns">
-      {# column block #}
-      <div class="row select-label mt-1">
-        <h6 class="font-weight-bold col-md-6 label">조회할 열을 선택해주세요.</h6>
-        <button class="btn btn-success col-md-1" id="column-plus" type="button">+</button>
-        <button class="btn btn-danger col-md-1 ml-1" id="column-sub" type="button">-</button>
+    {# msg block #}
+    <div class="container alert alert-danger" id="alert-danger-block">
+      <div class="text-right">
+        <button type="button" class="btn" id="danger-block-close">&times;</button>
       </div>
-      <div class="select-column-block mt-2 mb-2">
-        <select class="form-control col-md-7 mb-1 table-column">
-          <option>Select Column</option>
-        </select>
-      </div>
+      <div id="danger-msg"></div>
     </div>
-    <div class="select-tables border border-left-0 border-right-0">
-      {# from clause block #}
-      <div class="row select-label mt-1">
-        <h6 class="font-weight-bold col-md-6 label">조회할 테이블을 선택해주세요.</h6>
-        <button class="btn btn-success col-md-1" id="table-plus" type="button">+</button>
-        <button class="btn btn-danger col-md-1 ml-1" id="table-sub" type="button">-</button>
+    <div class="container alert alert-info" id="alert-info-block">
+      <div class="text-right">
+        <button type="button" class="btn" id="info-block-close">&times;</button>
       </div>
-      <div class="select-tables-block mt-2 mb-2">
-        <select class="form-control col-md-7 mb-1 table-select" onchange="table_select_change_event()">
-          <option value="">테이블을 선택해주세요.</option>
-          {% for tables in t_list %}
-            <option value="{{tables}}">{{tables}}</option>
-          {% endfor %}
-        </select>
-      </div>
+      <div id="info-msg"></div>
     </div>
-    <div class="select-where-clause border border-left-0 border-right-0 border-top-0">
-      {# where clause block #}
-      <div class="row select-where-label mt-1">
-        <h6 class="font-weight-bold col-md-8 label">조회할 테이블의 범위(조건)를 입력해주세요.</h6>
-        <button class="btn btn-success col-md-1" id="where-clause-plus" type="button">+</button>
-        <button class="btn btn-danger col-md-1 ml-1" id="where-clause-sub" type="button">-</button>
-      </div>
-      <div class="select-where-clause-block mt-2 mb-2">
-        <!-- <div class="row where-clause-block mb-1 container">
-          <select class="form-control col-md-4 where-clause-columns">
-            <option>Columns</option>
-          </select>
-          <select class="form-control col-md-3 ml-1 mr-1 where-clause-operator">
-            <option>operator</option>
-          </select>
-          <input type="text" class="form-control col-md-3" placeholder="입력 값" />
-        </div> -->
-      </div>
-    </div>
-    <div class="select-group-clause border border-left-0 border-right-0 border-top-0">
-      {# group clause block #}
-      <div class="row select-label mt-1">
-        <div class="col-md-1">
-          <input type="checkbox" class="form-control" id="group-check" />
+  </div>
+  <div class="mt-3 container">
+    {# result query & query explan & show query block  #}
+    <div class="container"></div>
+    <div class="container">
+      <ul class="nav nav-tabs">
+        <li class="nav-item">
+          <a href="#query-result" class="nav-link active text-dark font-weight-bold" data-toggle="tab">결과</a>
+        </li>
+        <li class="nav-item">
+          <a href="#explain" class="nav-link text-dark font-weight-bold" data-toggle="tab">실행계획</a>
+        </li>
+      </ul>
+
+      <!--탭 내용-->
+      <div class="tab-content">
+        <!--쿼리 실행결과-->
+        <div class="tab-pane fade show active" id="query-result" style="overflow:auto;">
+          {% include 'include/query_result.html' %}
         </div>
-        <h6 class="font-weight-bold col-md-6 label">그룹화할 열을 선택해주세요.</h6>
-        <button class="btn btn-success col-md-1" id="group-plus" type="button">+</button>
-        <button class="btn btn-danger col-md-1 ml-1" id="group-sub" type="button">-</button>
-      </div>
-      <div class="group-clause-block mt-2 mb-2">
-        <!-- <select class="form-control col-md-7 mb-1 group-clause-column">
-          <option>Select Column</option>
-        </select> -->
-      </div>
-    </div>
-    <div class="select-having-clause border border-left-0 border-right-0 border-top-0">
-      {# having clause block #}
-      <div class="row select-label mt-1">
-        <div class="col-md-1">
-          <input type="checkbox" class="form-control" id="having-check" />
+        <!--실행계획-->
+        <div class="tab-pane fade" id="explain">
+            
         </div>
-        <h6 class="font-weight-bold col-md-8 label">그룹의 조건을 입력해주세요.</h6>
-        <button class="btn btn-success col-md-1" id="having-clause-plus" type="button">+</button>
-        <button class="btn btn-danger col-md-1 ml-1" id="having-clause-sub" type="button">-</button>
-      </div>
-      <div class="select-having-clause-block mt-2 mb-2">
-        <!-- <div class="row having-clause-block mb-1 container">
-          <select class="form-control col-md-4 having-clause-columns">
-            <option>Columns</option>
-          </select>
-          <select class="form-control col-md-3 ml-1 mr-1 having-clause-operator">
-            <option>operator</option>
-          </select>
-          <input type="text" class="form-control col-md-3" placeholder="입력 값" />
-        </div> -->
-      </div>
-    </div>
-    <div class="select-orderby-clause border border-left-0 border-right-0 border-top-0">
-      {# order by clause #}
-      <div class="row select-label mt-1">
-        <div class="col-md-1">
-          <input type="checkbox" class="form-control" id="order-by-check" />
-        </div>
-        <h6 class="font-weight-bold col-md-8 label">행의 정렬 조건을 입력해주세요.</h6>
-        <button class="btn btn-success col-md-1" id="order-by-clause-plus" type="button">+</button>
-        <button class="btn btn-danger col-md-1 ml-1" id="order-by-clause-sub" type="button">-</button>
-      </div>
-      <div class="select-order-by-clause-block mt-2 mb-2">
-        <!-- <div class="row order-by-clause-block mb-1 container">
-          <select class="form-control col-md-6 order-by-clause-columns">
-            <option>Columns</option>
-          </select>
-          <select class="form-control col-md-4 ml-1 mr-1 order-by-clause-operator">
-            <option>ASC</option>
-            <option>DESC</option>
-          </select>
-        </div> -->
       </div>
     </div>
   </div>
-  <div class="mt-3 container"></div>
+  <script src="{{ url_for('static', filename='js/explain.js') }}"></script>
   <script>
     let table_info = {{ t_list | safe }};
     let column_info = "";
+    let columns_info_html = "";
+
+    const init_select_column_html = (columns_info_html) => {
+      // columns 생성 -- function화 진행하기.
+      let columns_info_select_html = "";
+      if(document.getElementsByClassName('table-column').length === 0){
+        // select clause 생성.
+        columns_info_select_html += '<select class="form-control col-md-7 mb-1 table-column">'
+                                      + columns_info_html
+                                    +'</select>'
+      }else{
+        // select clause 초기화.
+        for(let i = 0; i < document.getElementsByClassName('table-column').length; i++){
+          let columns_info_option_html = "";
+          column_info.forEach(element => {
+            if(document.getElementsByClassName('table-column')[i].value === element){
+              columns_info_option_html +='<option value="'+ element +'" selected>'+ element +'</option>';
+            }else{
+              columns_info_option_html += '<option value="'+ element +'">'+ element +'</option>';
+            }
+          });
+
+          columns_info_select_html += '<select class="form-control col-md-7 mb-1 table-column">'
+                                        + columns_info_option_html
+                                      +'</select>'
+        }
+      }
+
+      return columns_info_select_html;
+    }
+
+
+    const init_on_clause_html = (columns_info_html) => {
+      // on clause function
+      let on_clause_left_columns_info_select_html = "";
+      let on_clause_right_columns_info_select_html = "";
+      let on_clause_left_columns_info_option_html = "";
+      let on_clause_right_columns_info_option_html = "";
+      let on_clause_rows_html = "";
+
+      if(document.getElementsByClassName('on-clause-block').length === 0){
+        // on clause 생성.
+        on_clause_left_columns_info_select_html += '<select class="form-control mb-1 left-on-columns">'
+                                                      + columns_info_html
+                                                  +'</select>';
+
+        on_clause_right_columns_info_select_html += '<select class="form-control mb-1 right-on-columns">'
+                                                      + columns_info_html
+                                                   +'</select>';
+
+        on_clause_rows_html += '<div class="row on-clause-block mb-1 container">'
+                                    + '<div class="col-md-5">'
+                                      + on_clause_left_columns_info_select_html
+                                    + '</div>'
+                                    + '<div class="col-md-1">'
+                                      + '<h4 class="on-clause-operator">=</h4>'
+                                    + '</div>'
+                                    + '<div class="col-md-5">'
+                                      + on_clause_right_columns_info_select_html
+                                    + '</div>'
+                                  + '</div>';
+      }else{
+        for(let i = 0; i < document.getElementsByClassName('on-clause-block').length; i++){
+          column_info.forEach(element => {
+            if(document.getElementsByClassName('left-on-columns')[i].value === element){
+              on_clause_left_columns_info_option_html +='<option value="'+ element +'" selected>'+ element +'</option>';
+            }
+            if(document.getElementsByClassName('right-on-columns')[i].value === element){
+              on_clause_right_columns_info_option_html +='<option value="'+ element +'" selected>'+ element +'</option>';
+            }else{
+              on_clause_left_columns_info_option_html += '<option value="'+ element +'">'+ element +'</option>';
+              on_clause_right_columns_info_option_html += '<option value="'+ element +'">'+ element +'</option>';
+            }
+          });
+
+          if(i > 0){
+            on_clause_rows_html += '<div class="mt-1 mb-1 on-logical-operator-block">'
+                                      +  '<select class="form-control on-logical-operator">'
+                                        + '<option value="">두 범위를 연결할 논리 연산자를 선택해주세요.<option>'
+                                        + '<option value="and">and<option>'
+                                        + '<option value="or">or<option>'
+                                      +  '</select>'
+                                    + '</div>';
+          }
+
+          on_clause_left_columns_info_select_html += '<select class="form-control mb-1 left-on-columns">'
+                                                      + on_clause_left_columns_info_option_html
+                                                   + '</select>';
+
+          on_clause_right_columns_info_select_html += '<select class="form-control mb-1 right-on-columns">'
+                                                      + on_clause_right_columns_info_option_html
+                                                   + '</select>';
+
+          on_clause_rows_html += '<div class="row on-clause-block mb-1 container">'
+                                    + '<div class="col-md-5">'
+                                      + on_clause_left_columns_info_select_html
+                                    + '</div>'
+                                    + '<div class="col-md-1">'
+                                      + '<h4 class="on-clause-operator">=</h4>'
+                                    + '</div>'
+                                    + '<div class="col-md-5">'
+                                      + on_clause_right_columns_info_select_html
+                                    + '</div>'
+                                  + '</div>';
+        }
+      }
+
+      return on_clause_rows_html;
+    }
+
+
+    const init_where_clause_html = (columns_info_html) => {
+      // where clause 생성 -- 함수화 진행하기.
+      let where_clause_columns_info_select_html = "";
+      let where_clause_columns_info_option_html = "";
+      let where_clause_rows_html = "";
+      if(document.getElementsByClassName('where-clause-block').length === 0){
+        // where clause 생성.
+        where_clause_columns_info_select_html += '<select class="form-control col-md-4 mb-1 where-clause-columns">'
+                                                    + columns_info_html
+                                                +'</select>'
+
+        where_clause_rows_html += '<div class="row where-clause-block mb-1 container">'
+                                      + where_clause_columns_info_select_html
+                                      + '<select class="form-control col-md-3 ml-1 mr-1 where-clause-operator">'
+                                        + '<option value="=">=</option>'
+                                        + '<option value="!=">!=</option>'
+                                        + '<option value=">">></option>'
+                                        + '<option value="<"><</option>'
+                                        + '<option value=">=">>=</option>'
+                                        + '<option value="<="><=</option>'
+                                      + '</select>'
+                                      + '<input type="text" class="form-control col-md-3 where-value" placeholder="입력 값" />'
+                                  + '</div>'
+      }else{
+        for(let i = 0; i < document.getElementsByClassName('where-clause-block').length; i++){
+          column_info.forEach(element => {
+            if(document.getElementsByClassName('where-clause-columns')[i].value === element){
+              where_clause_columns_info_option_html +='<option value="'+ element +'" selected>'+ element +'</option>';
+            }else{
+              where_clause_columns_info_option_html += '<option value="'+ element +'">'+ element +'</option>';
+            }
+          });
+
+          if(i > 0){
+            where_clause_rows_html += '<div class="mt-1 mb-1 where-logical-operator-block">'
+                                        +  '<select class="form-control where-logical-operator">'
+                                          + '<option value="">두 범위를 연결할 논리 연산자를 선택해주세요.<option>'
+                                          + '<option value="and">and<option>'
+                                          + '<option value="or">or<option>'
+                                        +  '</select>'
+                                      + '</div>';
+          }
+
+          where_clause_columns_info_select_html = '<select class="form-control col-md-4 mb-1 where-clause-columns">'
+                                                      + where_clause_columns_info_option_html
+                                                  +'</select>';
+
+          where_clause_rows_html += '<div class="row where-clause-block mb-1 container">'
+                                      + where_clause_columns_info_select_html
+                                      + '<select class="form-control col-md-3 ml-1 mr-1 where-clause-operator">'
+                                        + '<option value="=">=</option>'
+                                        + '<option value="!=">!=</option>'
+                                        + '<option value=">">></option>'
+                                        + '<option value="<"><</option>'
+                                        + '<option value=">=">>=</option>'
+                                        + '<option value="<="><=</option>'
+                                      + '</select>'
+                                      + '<input type="text" class="form-control col-md-3 where-value" placeholder="입력 값" />'
+                                  + '</div>';
+        }
+      }
+
+      return where_clause_rows_html;
+    }
+
+
+    const init_group_by_clause_html = (columns_info_html) => {
+      // group clause 함수화
+      let group_clause_columns_info_select_html = "";
+      let group_clause_columns_info_option_html = "";
+
+      if(document.getElementsByClassName('group-clause-column').length === 0){
+        group_clause_columns_info_select_html += '<select class="form-control col-md-7 mb-1 group-clause-column">'
+                                                    + '<option value="">열을 선택해주세요.</option>'
+                                                    + columns_info_html
+                                                + '</select>';
+      }else{
+        for(let i = 0; i < document.getElementsByClassName('group-clause-column').length; i++){
+          column_info.forEach(element => {
+            if(document.getElementsByClassName('group-clause-column')[i].value === element){
+              group_clause_columns_info_option_html +='<option value="'+ element +'" selected>'+ element +'</option>';
+            }else{
+              group_clause_columns_info_option_html += '<option value="'+ element +'">'+ element +'</option>';
+            }
+          });
+
+          group_clause_columns_info_select_html += '<select class="form-control col-md-7 mb-1 group-clause-column">'
+                                                      + '<option value="">열을 선택해주세요.</option>'
+                                                      + group_clause_columns_info_option_html
+                                                  +'</select>';
+        }
+      }
+
+      return group_clause_columns_info_select_html;
+    }
+
+
+    const init_having_clause_html = (columns_info_html) => {
+      // having clause function
+      let having_clause_columns_info_select_html = "";
+      let having_clause_columns_info_option_html = "";
+      let having_clause_rows_html = "";
+
+      if(document.getElementsByClassName('having-clause-block').length === 0){
+        having_clause_columns_info_select_html += '<select class="form-control col-md-4 mb-1 having-clause-columns">'
+                                                    + columns_info_html
+                                                +'</select>';
+
+        having_clause_rows_html += '<div class="row having-clause-block mb-1 container">'
+                                      + having_clause_columns_info_select_html
+                                      + '<select class="form-control col-md-3 ml-1 mr-1 having-clause-operator">'
+                                        + '<option value="=">=</option>'
+                                        + '<option value="!=">!=</option>'
+                                        + '<option value=">">></option>'
+                                        + '<option value="<"><</option>'
+                                        + '<option value=">=">>=</option>'
+                                        + '<option value="<="><=</option>'
+                                      + '</select>'
+                                      + '<input type="text" class="form-control col-md-3 having-value" placeholder="입력 값" />'
+                                  + '</div>'
+      }else{
+        for(let i = 0; i < document.getElementsByClassName('having-clause-block').length; i++){
+          column_info.forEach(element => {
+            if(document.getElementsByClassName('having-clause-columns')[i].value === element){
+              having_clause_columns_info_option_html +='<option value="'+ element +'" selected>'+ element +'</option>';
+            }else{
+              having_clause_columns_info_option_html += '<option value="'+ element +'">'+ element +'</option>';
+            }
+          });
+
+          if(i !== 0){
+            having_clause_rows_html += '<div class="mt-1 mb-1 having-logical-operator-block">'
+                                        +  '<select class="form-control having-logical-operator">'
+                                          + '<option value="">두 범위를 연결할 논리 연산자를 선택해주세요.<option>'
+                                          + '<option value="and">and<option>'
+                                          + '<option value="or">or<option>'
+                                        +  '</select>'
+                                      + '</div>'
+          }
+
+          having_clause_columns_info_select_html = '<select class="form-control col-md-4 mb-1 having-clause-columns">'
+                                                      + having_clause_columns_info_option_html
+                                                  +'</select>';
+
+          having_clause_rows_html += '<div class="row having-clause-block mb-1 container">'
+                                        + having_clause_columns_info_select_html
+                                        + '<select class="form-control col-md-3 ml-1 mr-1 having-clause-operator">'
+                                          + '<option value="=">=</option>'
+                                          + '<option value="!=">!=</option>'
+                                          + '<option value=">">></option>'
+                                          + '<option value="<"><</option>'
+                                          + '<option value=">=">>=</option>'
+                                          + '<option value="<="><=</option>'
+                                        + '</select>'
+                                        + '<input type="text" class="form-control col-md-3 having-value" placeholder="입력 값" />'
+                                    + '</div>';
+
+        }
+      }
+
+      return having_clause_rows_html;
+    }
+
+
+    const init_order_by_clause_html = (columns_info_html) => {
+      // order by clause function
+      let orderBy_clause_columns_info_select_html = "";
+      let orderBy_clause_columns_info_option_html = "";
+      let orderBy_clause_rows_html = "";
+      if(document.getElementsByClassName('order-by-clause-block').length === 0){
+        orderBy_clause_columns_info_select_html += '<select class="form-control col-md-6 mb-1 order-by-clause-columns">'
+                                                    + columns_info_html
+                                                  +'</select>';
+
+        orderBy_clause_rows_html += '<div class="row order-by-clause-block mb-1 container">'
+                                      + orderBy_clause_columns_info_select_html
+                                      + '<select class="form-control col-md-4 ml-1 mr-1 order-by-clause-operator">'
+                                        + '<option value="">정렬 기준을 선택해주세요.</option>'
+                                        + '<option value="asc">ASC</option>'
+                                        + '<option value="desc">DESC</option>'
+                                      + '</select>'
+                                  + '</div>'
+      }else{
+        for(let i = 0; i < document.getElementsByClassName('order-by-clause-block').length; i++){
+          column_info.forEach(element => {
+            if(document.getElementsByClassName('order-by-clause-columns')[i].value === element){
+              orderBy_clause_columns_info_option_html +='<option value="'+ element +'" selected>'+ element +'</option>';
+            }else{
+              orderBy_clause_columns_info_option_html += '<option value="'+ element +'">'+ element +'</option>';
+            }
+          });
+
+          orderBy_clause_columns_info_select_html += '<select class="form-control col-md-6 mb-1 order-by-clause-columns">'
+                                                        + orderBy_clause_columns_info_option_html
+                                                    +'</select>';
+
+          orderBy_clause_rows_html += '<div class="row order-by-clause-block mb-1 container">'
+                                        + orderBy_clause_columns_info_select_html
+                                        + '<select class="form-control col-md-4 ml-1 mr-1 order-by-clause-operator">'
+                                          + '<option value="">정렬 기준을 선택해주세요.</option>'
+                                          + '<option value="asc">ASC</option>'
+                                          + '<option value="desc">DESC</option>'
+                                        + '</select>'
+                                    + '</div>';
+        }
+      }
+
+      return orderBy_clause_rows_html;
+    }
 
     const table_select_change_event = (e) => {
       let select_html = "";
@@ -141,6 +504,12 @@
           }else{
             option_html += '<option value="'+ table_info[j] +'">'+ table_info[j] +'</option>';
           }
+        }
+
+        if(i > 0){
+          select_html += '<select class="form-control mb-1 table-on-clause">'
+                          + document.getElementsByClassName('table-on-clause')[i-1].innerHTML
+                        + '</select>';
         }
 
         select_html += '<select class="form-control col-md-7 mb-1 table-select" onchange="table_select_change_event()">'
@@ -158,9 +527,38 @@
         dataType : 'json',
         success : (response) => {
           if(response.confirm){
-            column_info = Object.values(response.column_info);
-            console.log(typeof(column_info));
-            console.log(column_info);
+            columns_info_html = "";
+            column_info = response.column_info;
+            column_info.forEach(element => {
+              columns_info_html += '<option value="'+ element +'">'+ element +'</option>';
+            });
+
+            const columns_info_select_html = init_select_column_html(columns_info_html);
+
+
+            const where_clause_rows_html = init_where_clause_html(columns_info_html);
+
+            const group_clause_columns_info_select_html = init_group_by_clause_html(columns_info_html);
+
+            const having_clause_rows_html = init_having_clause_html(columns_info_html);
+
+            const orderBy_clause_rows_html = init_order_by_clause_html(columns_info_html);
+
+            document.getElementsByClassName('select-column-block')[0].innerHTML = columns_info_select_html;
+            if(document.getElementsByClassName('table-select').length > 1){
+              const on_clause_rows_html = init_on_clause_html(columns_info_html);
+              document.getElementsByClassName('select-on-clause-block')[0].innerHTML = on_clause_rows_html;
+              document.getElementsByClassName('select-on-clause')[0].style.display = 'block';
+            }else{
+              document.getElementsByClassName('select-on-clause-block')[0].innerHTML = "";
+              document.getElementsByClassName('select-on-clause')[0].style.display = 'none';
+            }
+            document.getElementsByClassName('select-where-clause-block')[0].innerHTML = where_clause_rows_html;
+            document.getElementsByClassName('group-clause-block')[0].innerHTML = group_clause_columns_info_select_html;
+            document.getElementsByClassName('select-having-clause-block')[0].innerHTML = having_clause_rows_html;
+            document.getElementsByClassName('select-order-by-clause-block')[0].innerHTML = orderBy_clause_rows_html;
+
+
           }else{
 
           }
@@ -169,19 +567,151 @@
     }
 
 
+    const write_select_query = () => {
+      let select_columns = "select ";
+      let from_clause = " from ";
+      let on_clause = "";
+      let where_clause = "";
+      let groupBy_clause ="";
+      let having_clause = "";
+      let orderBy_clause ="";
+      let select_query = "";
+      let info_msg = "";
+
+      if(document.getElementsByClassName('table-select').length > 1){
+        // from clause & on clause의 값 가져오기.
+        for(let i = 0; i < document.getElementsByClassName('table-select').length; i++){
+          if(i !== 0){
+            from_clause += document.getElementsByClassName('table-on-clause')[i-1].value + " ";
+          }
+          from_clause += document.getElementsByClassName('table-select')[i].value + " ";
+        }
+      }else{
+        from_clause += document.getElementsByClassName('table-select')[0].value;
+      }
+
+      if(document.getElementsByClassName('on-clause-block').length > 0){
+        for(let i = 0; i < document.getElementsByClassName('on-clause-block').length; i++){
+          if(i !== 0) on_clause += " " + document.getElementsByClassName('on-logical-operator')[i-1].value + " ";
+          on_clause += "on " + document.getElementsByClassName('left-on-columns')[i].value + "=" + document.getElementsByClassName('right-on-columns')[i].value;
+        }
+      }
+
+      for(let i = 0; i < document.getElementsByClassName('table-column').length; i++){
+        if(i > 0){
+          select_columns += ", " + document.getElementsByClassName('table-column')[i].value;
+        }else{
+          select_columns += document.getElementsByClassName('table-column')[i].value;
+        }
+      }
+
+      select_query += select_columns + from_clause;
+
+      if(on_clause !== "") select_query += on_clause;
+
+      if(document.getElementById('where-check').checked){
+        where_clause += " where ";
+        for(let i = 0; i < document.getElementsByClassName('where-clause-block').length; i++){
+          if(document.getElementsByClassName('where-value')[i].value === ""){
+            info_msg += "조회할 테이블의 범위를 입력해주세요(where 절)에 있는 "+ i +"번 행의 입력값이 존재하지 않아 해당 조건을 제외하고 쿼리를 작성합니다.<br>";
+          }else{
+            if(i !== 0){
+              where_clause += " " + document.getElementsByClassName('where-logical-operator')[i - 1].value + " ";
+            }
+
+            if(isNaN(document.getElementsByClassName('where-value')[i].value)){
+              where_clause += document.getElementsByClassName('where-clause-columns')[i].value + document.getElementsByClassName('where-clause-operator')[i].value + "'" + document.getElementsByClassName('where-value')[i].value + "'";
+            }else{
+              where_clause += document.getElementsByClassName('where-clause-columns')[i].value + document.getElementsByClassName('where-clause-operator')[i].value + document.getElementsByClassName('where-value')[i].value;
+            }
+          }
+        }
+
+        select_query += where_clause;
+      }
+
+      if(document.getElementById('group-check').checked){
+        groupBy_clause = " group by ";
+        for(let i = 0; i < document.getElementsByClassName('group-clause-column').length; i++){
+          if(document.getElementsByClassName('group-clause-column')[i].value === ""){
+            info_msg += "그룹화할 열을 선택해주세요에 있는 "+ i +"번 행을 선택하지 않아 해당 조건을 제외하고 쿼리를 작성합니다.<br>";
+          }else{
+            if(i === 0){
+              groupBy_clause += document.getElementsByClassName('group-clause-column')[i].value;
+            }else{
+              groupBy_clause += ", " + document.getElementsByClassName('group-clause-column')[i].value;
+            }
+          }
+        }
+
+        select_query += groupBy_clause;
+      }
+
+      if(document.getElementById('having-check').checked){
+        having_clause = " having ";
+        for(let i = 0; i < document.getElementsByClassName('having-clause-block').length; i++){
+          if(document.getElementsByClassName('having-value')[i].value === ""){
+            info_msg += "그룹의 조건을 입력해주세요(having 절)에 있는 "+ i +"번 행의 입력값이 존재하지 않아 해당 조건을 제외하고 쿼리를 작성합니다.<br>";
+          }else{
+            if(i !== 0){
+              having_clause += " " + document.getElementsByClassName('having-logical-operator')[i - 1].value + " ";
+            }
+            if(isNaN(document.getElementsByClassName('having-value')[i].value)){
+              having_clause += document.getElementsByClassName('having-clause-columns')[i].value + document.getElementsByClassName('having-clause-operator')[i].value + "'" + document.getElementsByClassName('having-value')[i].value + "'";
+            }else{
+              having_clause += document.getElementsByClassName('having-clause-columns')[i].value + document.getElementsByClassName('having-clause-operator')[i].value + document.getElementsByClassName('having-value')[i].value;
+            }
+          }
+        }
+
+        select_query += having_clause;
+
+      }
+
+      if(document.getElementById('order-by-check').checked){
+        orderBy_clause = " order by ";
+
+        for(let i = 0; i < document.getElementsByClassName('order-by-clause-block').length; i++){
+          if(document.getElementsByClassName('order-by-clause-operator')[i].value === ""){
+            info_msg += "행의 정렬 조건을 선택해주세요에 있는 "+ i +"번 행을 선택하지 않아 해당 조건을 제외하고 쿼리를 작성합니다.<br>";
+          }else{
+            if(i === 0){
+              orderBy_clause += document.getElementsByClassName('order-by-clause-columns')[i].value + " " + document.getElementsByClassName('order-by-clause-operator')[i].value;
+            }else{
+              orderBy_clause += ", " + document.getElementsByClassName('order-by-clause-columns')[i].value + " " + document.getElementsByClassName('order-by-clause-operator')[i].value;
+            }
+          }
+        }
+
+        select_query += orderBy_clause;
+      }
+
+      if(info_msg !== ""){
+        document.getElementById('info-msg').innerHTML = info_msg;
+        document.getElementById('alert-info-block').style.display = 'block';
+      }
+
+      return select_query;
+    }
+
+
+
+
 
     $(function(){
 
 
       document.getElementById('column-plus').onclick = (e) => {
-        document.getElementsByClassName('select-column-block')[0].innerHTML +=  '<select class="form-control col-md-7 mb-1 table-column">'
-                                                                                  + '<option>Select Column</option>'
-                                                                                + '</select>';
+        // select column add button event
+        document.getElementsByClassName('select-column-block')[0].innerHTML =  init_select_column_html(columns_info_html);
+        document.getElementsByClassName('select-column-block')[0].innerHTML += '<select class="form-control col-md-7 mb-1 table-column">'
+                                                                                + columns_info_html
+                                                                              +'</select>';
       }
 
       document.getElementById('column-sub').onclick = (e) => {
-        
-        if(document.getElementsByClassName('table-column').length === 1){
+        // select column sub button event
+        if(document.getElementsByClassName('table-column').length <= 1){
           console.log('Last Column!');
           return false;
         }
@@ -190,61 +720,164 @@
       }
 
       document.getElementById('table-plus').onclick = (e) => {
+        // select table add button event
         let option_html = "";
         for(let i = 0; i < table_info.length; i++){
           option_html += '<option value="'+ table_info[i] +'">'+ table_info[i] +'</option>';
         }
-        document.getElementsByClassName('select-tables-block')[0].innerHTML += '<select class="form-control col-md-7 mb-1 table-select" onchange="table_select_change_event();">'
-                                                                                + '<option value="">테이블을 선택해주세요.</option>'
-                                                                                +  option_html
+        document.getElementsByClassName('select-tables-block')[0].innerHTML += '<select class="form-control mb-1 table-on-clause">'
+                                                                                  + '<option value="inner join">Inner join</option>'
+                                                                                  + '<option value="left outer join">left outer join</option>'
+                                                                                  + '<option value="right outer join">right outer join</option>'
+                                                                                  + '<option value="full outer join">full outer join(ORACLE)</option>'
+                                                                                + '</select>'
+                                                                                + '<select class="form-control col-md-7 mb-1 table-select" onchange="table_select_change_event();">'
+                                                                                  + '<option value="">테이블을 선택해주세요.</option>'
+                                                                                  +  option_html
                                                                                 + '</select>';
 
       }
 
       document.getElementById('table-sub').onclick = (e) => {
-        if(document.getElementsByClassName('table-select').length === 1){
+        // select table sub button event
+        if(document.getElementsByClassName('table-select').length <= 1){
           console.log('Last Tables!!');
           return false;
         }
 
+        console.log("remove table value : " + document.getElementsByClassName('table-select')[document.getElementsByClassName('table-select').length - 1].value)
 
-        column_info.forEach((element, index) => {
-          if(element.includes(document.getElementsByClassName('table-select')[document.getElementsByClassName('table-select').length - 1].value)){
-            console.log(element, index);
+        let splice_array = [];
+
+        if(document.getElementsByClassName('table-select')[document.getElementsByClassName('table-select').length - 1].value !== ""){
+          column_info.forEach((element) => {
+            if(element.includes(document.getElementsByClassName('table-select')[document.getElementsByClassName('table-select').length - 1].value)){
+              splice_array.push(column_info.indexOf(element));
+            }
+          });
+
+          splice_array = splice_array.reverse()
+
+          splice_array.forEach(index => {
             column_info.splice(index, 1);
-          }
-          console.log("splice column info"+column_info);
-        });
-
-        console.log("total"+column_info);
+          })
+        }
 
         document.getElementsByClassName('select-tables-block')[0].removeChild(document.getElementsByClassName('table-select')[document.getElementsByClassName('table-select').length - 1]);
+        document.getElementsByClassName('select-tables-block')[0].removeChild(document.getElementsByClassName('table-on-clause')[document.getElementsByClassName('table-on-clause').length - 1]);
+
+        column_info.forEach(element => {
+          columns_info_html += '<option value="'+ element +'">'+ element +'</option>';
+        });
+
+        const columns_info_select_html = init_select_column_html(columns_info_html);
+
+        const where_clause_rows_html = init_where_clause_html(columns_info_html);
+
+        const group_clause_columns_info_select_html = init_group_by_clause_html(columns_info_html);
+
+        const having_clause_rows_html = init_having_clause_html(columns_info_html);
+
+        const orderBy_clause_rows_html = init_order_by_clause_html(columns_info_html);
+
+        document.getElementsByClassName('select-column-block')[0].innerHTML = columns_info_select_html;
+        if(document.getElementsByClassName('table-select').length > 1){
+          const on_clause_rows_html = init_on_clause_html(columns_info_html);
+          document.getElementsByClassName('select-on-clause-block')[0].innerHTML = on_clause_rows_html;
+          document.getElementsByClassName('select-on-clause')[0].style.display = 'block';
+        }else{
+          document.getElementsByClassName('select-on-clause-block')[0].innerHTML = "";
+          document.getElementsByClassName('select-on-clause')[0].style.display = 'none';
+        }
+        document.getElementsByClassName('select-where-clause-block')[0].innerHTML = where_clause_rows_html;
+        document.getElementsByClassName('group-clause-block')[0].innerHTML = group_clause_columns_info_select_html;
+        document.getElementsByClassName('select-having-clause-block')[0].innerHTML = having_clause_rows_html;
+        document.getElementsByClassName('select-order-by-clause-block')[0].innerHTML = orderBy_clause_rows_html;
       }
 
+
+
+      document.getElementById('on-clause-plus').onclick = (e) => {
+        // on clause add event function
+        document.getElementsByClassName('select-on-clause-block')[0].innerHTML = init_on_clause_html(columns_info_html);
+        document.getElementsByClassName('select-on-clause-block')[0].innerHTML += '<div class="mt-1 mb-1 on-logical-operator-block container">'
+                                                                                  +  '<select class="form-control on-logical-operator">'
+                                                                                    + '<option value="">두 범위를 연결할 논리 연산자를 선택해주세요.<option>'
+                                                                                    + '<option value="and">and<option>'
+                                                                                    + '<option value="or">or<option>'
+                                                                                  +  '</select>'
+                                                                                + '</div>'
+                                                                                + '<div class="row on-clause-block mb-1 container">'
+                                                                                  + '<div class="col-md-5">'
+                                                                                    + '<select class="form-control mb-1 left-on-columns">'
+                                                                                      + columns_info_html
+                                                                                    +'</select>'
+                                                                                  + '</div>'
+                                                                                  + '<div class="col-md-1">'
+                                                                                    + '<h4 class="on-clause-operator">=</h4>'
+                                                                                  + '</div>'
+                                                                                  + '<div class="col-md-5">'
+                                                                                    + '<select class="form-control mb-1 right-on-columns">'
+                                                                                      + columns_info_html
+                                                                                    +'</select>'
+                                                                                  + '</div>'
+                                                                                + '</div>';
+      }
+
+      document.getElementById('on-clause-sub').onclick = (e) => {
+        // on clause sub event function
+        if(document.getElementsByClassName('on-clause-block').length === 1){
+          return false;
+        }
+        document.getElementsByClassName('select-on-clause-block')[0].removeChild(document.getElementsByClassName('on-clause-block')[document.getElementsByClassName('on-clause-block').length - 1]);
+      }
+
+
+
       document.getElementById('where-clause-plus').onclick = (e) => {
-        document.getElementsByClassName('select-where-clause-block')[0].innerHTML += '<div class="row where-clause-block mb-1 container">'
+        // where clause add event function
+        document.getElementsByClassName('select-where-clause-block')[0].innerHTML = init_where_clause_html(columns_info_html);
+        document.getElementsByClassName('select-where-clause-block')[0].innerHTML += '<div class="mt-1 mb-1 where-logical-operator-block">'
+                                                                                          +  '<select class="form-control where-logical-operator">'
+                                                                                            + '<option value="">두 범위를 연결할 논리 연산자를 선택해주세요.</option>'
+                                                                                            + '<option value="and">and</option>'
+                                                                                            + '<option value="or">or</option>'
+                                                                                          +  '</select>'
+                                                                                      + '</div>'
+                                                                                      + '<div class="row where-clause-block mb-1 container">'
                                                                                         + '<select class="form-control col-md-4 where-clause-columns">'
-                                                                                          + '<option>Columns</option>'
+                                                                                          + columns_info_html
                                                                                         + '</select>'
                                                                                         + '<select class="form-control col-md-3 ml-1 mr-1 where-clause-operator">'
-                                                                                          + '<option>operator</option>'
+                                                                                          + '<option value="=">=</option>'
+                                                                                          + '<option value="!=">!=</option>'
+                                                                                          + '<option value=">">></option>'
+                                                                                          + '<option value="<"><</option>'
+                                                                                          + '<option value=">=">>=</option>'
+                                                                                          + '<option value="<="><=</option>'
                                                                                         + '</select>'
-                                                                                        + '<input type="text" class="form-control col-md-3" placeholder="입력 값" />'
+                                                                                        + '<input type="text" class="form-control col-md-3 where-value" placeholder="입력 값" />'
                                                                                       + '</div>';
       }
 
       document.getElementById('where-clause-sub').onclick = (e) => {
+        // where clause sub event function
         if(document.getElementsByClassName('where-clause-block').length === 0){
           console.log('Last Where Clause!!');
           return false;
         }
         document.getElementsByClassName('select-where-clause-block')[0].removeChild(document.getElementsByClassName('where-clause-block')[document.getElementsByClassName('where-clause-block').length - 1]);
+        document.getElementsByClassName('select-where-clause-block')[0].removeChild(document.getElementsByClassName('where-logical-operator-block')[document.getElementsByClassName('where-logical-operator-block').length - 1]);
       }
 
+
+
       document.getElementById('group-plus').onclick = (e) => {
+        document.getElementsByClassName('group-clause-block')[0].innerHTML = init_group_by_clause_html(columns_info_html);
         document.getElementsByClassName('group-clause-block')[0].innerHTML += '<select class="form-control col-md-7 mb-1 group-clause-column">'
-                                                                          + '<option>Select Column</option>'
-                                                                        + '</select>'
+                                                                                + '<option value="">열을 선택해주세요.</option>'
+                                                                                + columns_info_html
+                                                                            + '</select>'
       }
 
       document.getElementById('group-sub').onclick = (e) =>{
@@ -255,37 +888,57 @@
         document.getElementsByClassName('group-clause-block')[0].removeChild(document.getElementsByClassName('group-clause-column')[document.getElementsByClassName('group-clause-column').length - 1])
       }
 
+
+
       document.getElementById('having-clause-plus').onclick = (e) => {
-        document.getElementsByClassName('select-having-clause-block')[0].innerHTML += '<div class="row having-clause-block mb-1 container">'
+        document.getElementsByClassName('select-having-clause-block')[0].innerHTML = init_having_clause_html(columns_info_html);
+        document.getElementsByClassName('select-having-clause-block')[0].innerHTML += '<div class="mt-1 mb-1 having-logical-operator-block">'
+                                                                                      +  '<select class="form-control having-logical-operator">'
+                                                                                        + '<option value="">두 범위를 연결할 논리 연산자를 선택해주세요.</option>'
+                                                                                        + '<option value="and">and</option>'
+                                                                                        + '<option value="or">or</option>'
+                                                                                      +  '</select>'
+                                                                                  + '</div>'
+                                                                                  + '<div class="row having-clause-block mb-1 container">'
                                                                                     + '<select class="form-control col-md-4 having-clause-columns">'
-                                                                                      + '<option>Columns</option>'
+                                                                                      + columns_info_html
                                                                                     + '</select>'
                                                                                     + '<select class="form-control col-md-3 ml-1 mr-1 having-clause-operator">'
-                                                                                      + '<option>operator</option>'
+                                                                                      + '<option value="=">=</option>'
+                                                                                      + '<option value="!=">!=</option>'
+                                                                                      + '<option value=">">></option>'
+                                                                                      + '<option value="<"><</option>'
+                                                                                      + '<option value=">=">>=</option>'
+                                                                                      + '<option value="<="><=</option>'
                                                                                     + '</select>'
-                                                                                    + '<input type="text" class="form-control col-md-3" placeholder="입력 값" />'
+                                                                                    + '<input type="text" class="form-control col-md-3 having-value" placeholder="입력 값" />'
                                                                                   + '</div>'
       }
+
 
       document.getElementById('having-clause-sub').onclick = (e) => {
         if(document.getElementsByClassName('having-clause-block').length === 0){
           console.log('Having Clause Last!!!');
           return false;
         }
-        document.getElementsByClassName('select-having-clause-block')[0].removeChild(document.getElementsByClassName('having-clause-block')[document.getElementsByClassName('having-clause-block').length - 1])
+        document.getElementsByClassName('select-having-clause-block')[0].removeChild(document.getElementsByClassName('having-clause-block')[document.getElementsByClassName('having-clause-block').length - 1]);
+        document.getElementsByClassName('select-having-clause-block')[0].removeChild(document.getElementsByClassName('having-logical-operator-block')[document.getElementsByClassName('having-logical-operator-block').length - 1])
       }
 
       document.getElementById('order-by-clause-plus').onclick = (e) => {
+        document.getElementsByClassName('select-order-by-clause-block')[0].innerHTML = init_order_by_clause_html(columns_info_html);
         document.getElementsByClassName('select-order-by-clause-block')[0].innerHTML += '<div class="row order-by-clause-block mb-1 container">'
                                                                                           + '<select class="form-control col-md-6 order-by-clause-columns">'
-                                                                                            + '<option>Columns</option>'
+                                                                                            + columns_info_html
                                                                                           + '</select>'
                                                                                           + '<select class="form-control col-md-4 ml-1 mr-1 order-by-clause-operator">'
-                                                                                            + '<option>ASC</option>'
-                                                                                            + '<option>DESC</option>'
+                                                                                            + '<option value="">정렬 기준을 선택해주세요.</option>'
+                                                                                            + '<option value="asc">ASC</option>'
+                                                                                            + '<option value="desc">DESC</option>'
                                                                                           + '</select>'
                                                                                         + '</div>';
       }
+
 
       document.getElementById('order-by-clause-sub').onclick = (e) => {
         if(document.getElementsByClassName('order-by-clause-block').length === 0){
@@ -293,6 +946,59 @@
           return false;
         }
         document.getElementsByClassName('select-order-by-clause-block')[0].removeChild(document.getElementsByClassName('order-by-clause-block')[document.getElementsByClassName('order-by-clause-block').length - 1])
+      }
+
+
+      document.getElementById('danger-block-close').onclick = (e) => {
+        document.getElementById('alert-danger-block').style.display = 'none';
+      }
+
+
+      document.getElementById('info-block-close').onclick = (e) => {
+        document.getElementById('alert-info-block').style.display = 'none';
+      }
+
+
+      document.getElementById('select-form').onsubmit = (e) => {
+        e.preventDefault();
+
+        document.getElementById('info-msg').innerHTML ="";
+        document.getElementById('danger-msg').innerHTML ="";
+
+        if(document.getElementsByClassName('table-select').length === 1 
+           && document.getElementsByClassName('table-select')[0].value === ""){
+          document.getElementById('danger-msg').innerText = '테이블을 선택하지 않았습니다. 테이블을 선택해주신 후에 조회할 열을 선택해주세요.';
+          document.getElementById('alert-danger-block').style.display = 'block';
+          return false;
+        }
+        console.log('Select Query Submit!!');
+
+        const select_query = write_select_query();
+
+        console.log("Select Query is  : " + select_query);
+
+        $.ajax({
+          type : 'post',
+          url : location.pathname,
+          data : {'setting' : 'select', 'query' : select_query},
+          success : (response) => {
+            if(response.confirm){
+              document.getElementById('query-result').innerHTML = "";
+              document.getElementById('query-result').innerHTML = response.results;
+              let explain_result = response.explain;
+              if(response.dbms === 'mysql' || response.dbms === 'maria') explain_result = JSON.parse(response.explain);
+
+              $("#explain").show_explain(dbms=response.dbms,exp_results=explain_result);
+
+              document.getElementById('info-msg').innerHTML += "<h6>"+response.msg+"</h6>";
+              document.getElementById('alert-info-block').style.display='block';
+            }else{
+              document.getElementById('danger-msg').innerHTML = response.msg + "<br> 작성된 쿼리는 다음과 같습니다. " + select_query;
+              document.getElementById('alert-danger-block').style.display = 'block';
+            }
+          }
+        });
+
       }
     });
   </script>
