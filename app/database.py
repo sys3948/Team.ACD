@@ -112,7 +112,6 @@ class Database():
             self.excute(f"explain plan for {sql}")
             explain = self.excuteAll("select * from table(dbms_xplan.display)")[5:-1]
             explain = [el[0].split('|')[2:] for el in explain]
-            print(explain)
 
         else:
             explain=self.excuteOne(f"explain format=json {sql}")
