@@ -312,6 +312,24 @@ def ajax_request_tables(id,database,dbms_info):
         
     return jsonify(context)
 
+@login_check
+@dbide.route('/pymongo_test/<id>')
+@connect_db
+def pymongo_test(id,dbms_info):
+    user_db = dbms_info.get('user_db')
+    db = user_db.get_mongo_client()
+    # print("="*30,"database_command_list","="*30)
+    # print(dir(db))
+    # print("="*30)
+    # print("="*30,"collection_command_list","="*30)
+    # print(dir(db.zuozhu))
+    # print("="*30)
+
+    
+    
+    return "test"
+
+
 
 
 @login_check
