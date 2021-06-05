@@ -18,7 +18,7 @@ import io
 from werkzeug.utils import secure_filename
 from pymongo import MongoClient as Mongo
 import pymongo
-
+import regex
 
 
 
@@ -312,6 +312,7 @@ def ajax_request_tables(id,database,dbms_info):
         
     return jsonify(context)
 
+
 @login_check
 @dbide.route('/pymongo_test/<id>')
 @connect_db
@@ -326,6 +327,14 @@ def pymongo_test(id,dbms_info):
     # print("="*30)
 
     
+    
+
+
+    json_obj = json.loads("""[{"name":"poapo"},{"$set":{"age":"29"}}]""")
+    for el in json_obj:
+        print(el)
+    #print("start: ", r.start())
+    #print("end: ",r.end())
     
     return "test"
 

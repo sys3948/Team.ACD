@@ -16,7 +16,9 @@ class JSONEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, ObjectId):
             return str(o)
-        return json.JSONEncoder.default(self, o)
+        else:
+            return str(o)    
+        
 
 class Database():
     def __init__(self,dbms='mysql',**kargs):
@@ -97,16 +99,19 @@ class Database():
         result = None
         
         for i,token in enumerate(tokens):
-            
+            print("token: ",token)
+            #print("is_match: ",re.compile("\w+\((.|\n)*\)").match(token))
             if i == 0:
                 if token != 'db':
                     raise Exception(f'{token} is not defined')
                 result = self.get_mongo_client()
             
             #함수면 실행
-            elif re.compile("^\w+\(.*\)$").match(token):
+            elif re.compile("\w+\((.|\n)*\)").match(token):
+                print("hihihihihi")
                 #함수명, 함수argument로 split
                 func_name,args = token.split('(')
+                
 
                 #함수명 리스트로 변환 
                 new_func_name = list(func_name)
@@ -115,19 +120,21 @@ class Database():
                 #pymongo function params
                 params = []
                 print("args: ",args)
-                if args != "":
-                    #argument json 있으면
-                    if re.compile('\{(.|\n)*\}').match(args):
-                        json_match = re.compile('\{(.|\n)*\}').match(args)
-                        params.append(json.loads(json_match.group().replace("'","\"")))#json append
-                        option_args = args[json_match.end():].split(',') #json 제외한 args
-                        #json 제외한 args 리스트에 추가
-                        for option in option_args[1:]:
-                            params.append(option)
-                    else:
-                        #args 리스트에 추가
-                        for option in args.split(","):
-                            params.append(option)   
+
+                
+            
+                args_reg = '(\{(.|\n)*\}|\[(.|\n)*\]|[a-zA-Z0-9]*)' #함수 argument 자르기 위한 정규식
+                for arg in re.compile(args_reg).finditer(args):
+                    print("arg: ",arg.group())
+                    if re.compile('[^a-zA-Z0-9]').match(arg.group()): #json 이면
+                        json_arr = json.loads("["+arg.group().replace("'","\"")+"]")
+                        for doc in json_arr:
+                            params.append(doc)
+                    elif arg.group() != "": #json 아닌 인자면 
+                        number_re = re.compile('\d+').match(arg.group())
+                        param =  int(arg.group()[number_re.start():number_re.end()]) if number_re  else arg.group() #인자가 숫자면 형변환
+                        params.append(param)
+
 
                 # 함수명 스타일 변경
                 #ex) findOne -> find_one
@@ -135,6 +142,7 @@ class Database():
                     new_func_name[m.start()] = '_'+m.group().lower()
 
                 new_func_name = "".join(new_func_name)
+                print("new_func: ", new_func_name)
                 new_func_name = self.mongo_to_pymongo.get(new_func_name) if self.mongo_to_pymongo.get(new_func_name) else new_func_name
                 converted_list.append([new_func_name,func_name])
                 
@@ -144,23 +152,28 @@ class Database():
 
 
         explain = None
+        print(result)
         if type(result) == pymongo.cursor.Cursor: # find() 실행시
             explain = getattr(result,'explain')()
             explain = explain['queryPlanner'] 
             result = JSONEncoder().encode(list(result))
 
 
-        if type(result) == dict: # result 타입이 dictionary 일때
-            result = JSONEncoder().encode([result])
-        
-        if type(result) == pymongo.database.Database:
-            result = JSONEncoder().encode([{"db_name":result.name}])
-        
-        if type(result) == pymongo.collection.Collection:
-            result = JSONEncoder().encode([{"collection_name":result.name}])
-
         print("mongo_result_type: ",type(result))
         print("mongo_result: ", result)
+        if type(result) == dict: # result 타입이 dictionary 일때
+            result = JSONEncoder().encode([result])
+        elif type(result) == str:
+            result = [result]
+        elif type(result) == pymongo.database.Database:
+            result = JSONEncoder().encode([{"db_name":result.name}])
+        
+        elif type(result) == pymongo.collection.Collection:
+            result = JSONEncoder().encode([{"collection_name":result.name}])
+        else:
+            result = None
+        
+        
         return result,converted_list,explain
 
 
