@@ -13,7 +13,7 @@ from ..email import send_email
 from ..database import Database
 from ..decorate import login_check
 from pymongo import MongoClient
-
+import urllib.parse
 
 @auth.route('/sign_in', methods=['GET', 'POST'])
 def sign_in():
@@ -311,14 +311,16 @@ def reset_pw(token):
              data.get('id')
              )
         )
+
+
         #dbms_info 테이블 비밀번호 변경
         mysql_db.excute(
             '''
                 UPDATE dbms_info
-                SET dbms_connect_pw
-                WHERE id=%s
+                SET dbms_connect_pw=%s
+                WHERE user_id=%s
             ''',
-            (data.get('id'))
+            (request.form.get('pw'),data.get('id'))
         )
         mysql_db.commit()
 
@@ -341,6 +343,11 @@ def reset_pw(token):
         #oracle dbms 비밀번호 변경
         oracle_db.excute(f"ALTER user {user_id} IDENTIFIED BY {request.form.get('pw')}",())
 
+        #mongo 비밀번호 변경
+        uri = "mongodb://127.0.0.1:27017"
+        mongo_client = MongoClient(uri)
+        db = mongo_client['admin']
+        db.command("updateUser", f"{user_id}", pwd=request.form.get('pw'))
         
         mysql_db.close()
         maria_db.close()
