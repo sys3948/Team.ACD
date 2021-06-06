@@ -1,0 +1,92 @@
+{% extends "/no_major/base.html" %}
+
+{% block query_btn %}
+  {% include "/include/_no_major_delete_btn.html"%}
+{% endblock %}
+
+{% block execute %}
+  <div class="container">
+    <h2>테이블 {{title}}</h2>
+    <form id="create-table-form" method="post">
+      <select class="form-control" name="db">
+        <option value="">삭제할 테이블에 속하는 데이터베이스를 선택해주세요.</option>
+        {% if databases %}
+          {% for db in databases %}
+            <option value="{{db}}">{{db}}</option>
+          {% endfor %}
+        {% endif %}
+      </select>
+      <div id="table-select-block"></div>
+      <div id="input-data-block" class="mt-3 mb-2">
+        <span class="font-weight-bold">데이터를 삭제하기 위한 입력 값 형태는 다음과 같습니다. name:value이며 여러개의 값을 입력하려면 입력 값 다음에 쉼표(,)를 기입해주세요. 예: name:value,name:value</span>
+        <textarea class="form-control" name="data"></textarea>
+      </div>
+      <div class="form-group text-center">
+        <input type="submit" value="Delete(삭제)" class="btn btn-primary" />
+      </div>
+    </form>
+    <div class="alert alert-info">
+      <span id="">우선 삭제할 테이블에 속한 데이터베이스를 선택해주세요.</span>
+    </div>
+    <div class="alert alert-danger" id="alert-block" style="display: none;">
+      <span id="alert-msg"></span>
+    </div>
+  </div>
+  <script>
+    $(function(){
+      const table_list = {{t_list|safe}};
+      console.log(table_list);
+
+      document.getElementsByName('db')[0].onchange = (e) => {
+        if(document.getElementsByName('db')[0].value === ''){
+          return false;
+        }
+
+        console.log(table_list[document.getElementsByName('db')[0].value].lenght);
+        let tables = "";
+
+        table_list[document.getElementsByName('db')[0].value].forEach(element => {
+          console.log(element);
+          console.log(Object.keys(element).length);
+          for(let i=0; i < Object.keys(element).length; i++){
+            tables += '<option value="'+element[i]+'">'+ element[i] +'</option>';
+          }
+        });
+
+        console.log(tables);
+
+        document.getElementById('table-select-block').innerHTML = '<select class="form-control mb-2 mt-3" name="tables">'
+                                                                  +  '<option value="">삭제할 테이블을 선택해주세요.</option>'
+                                                                  +  tables
+                                                                + '</select>'
+      }
+
+
+      document.getElementById('create-table-form').onsubmit = (e) => {
+        e.preventDefault();
+        document.getElementById('alert-msg').innerHTML = '';
+          document.getElementById('alert-block').style.display = 'none';
+        if(document.getElementsByName('db')[0].value === ''){
+          document.getElementById('alert-msg').innerHTML = '데이터베이스를 선택해주세요.';
+          document.getElementById('alert-block').style.display = 'block';
+          return false;
+        }
+
+        if(document.getElementsByName('tables')[0].value === ''){
+          document.getElementById('alert-msg').innerHTML = '삭제할 테이블을 선택해주세요.';
+          document.getElementById('alert-block').style.display = 'block';
+          return false;
+        }
+
+        if(document.getElementsByName('data')[0].value === ''){
+          document.getElementById('alert-msg').innerHTML = '데이터 값이 입력되지 않았습니다. 데이터 값을 입력해주세요.';
+          document.getElementById('alert-block').style.display = 'block';
+          return false;
+        }
+
+        document.getElementById('create-table-form').submit();
+
+      }
+    });
+  </script>
+{% endblock %}

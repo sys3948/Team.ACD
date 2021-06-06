@@ -12,9 +12,15 @@
               <option value="{{table[0]}}">{{table[0]}}</option>
             {% endfor %}
           {% elif title == '데이터베이스' %}
-            <option>DBMS</option>
-            <option>Oracle</option>
-            <option>MySQL</option>
+            {% if db_info[0] == 'mysql' or db_info[0] == 'maria' %}
+              {% for database in d_list %}
+                <option value="{{database[0]}}">{{database[0]}}</option>
+              {% endfor %}
+            {% else %}
+              {% for database in d_list %}
+                <option value="{{database}}">{{database}}</option>
+              {% endfor %}
+            {% endif %}
           {% endif %}
         </select>
       </div>

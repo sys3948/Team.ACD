@@ -9,6 +9,7 @@ from pymongo import MongoClient
 import pymongo
 import json
 from bson import ObjectId
+import urllib.parse
 
 
 
@@ -251,6 +252,9 @@ class Database():
     #몽고db 연결 객체 반환
     def get_mongo_client(self):
         return self.mongo_client.get_default_database()
+
+    # def get_client(self):
+    #     return self.mongo_client
 
     def show_databases_and_tables(self,db_info):
         '''

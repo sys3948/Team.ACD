@@ -1,0 +1,77 @@
+{% extends "/no_major/base.html" %}
+
+{% block execute %}
+  <div class="container">
+    <h2>테이블 {{title}}</h2>
+    <form id="create-table-form" method="post">
+      <select class="form-control" name="db">
+        <option value="">삭제할 테이블에 속하는 데이터베이스를 선택해주세요.</option>
+        {% if databases %}
+          {% for db in databases %}
+            <option value="{{db}}">{{db}}</option>
+          {% endfor %}
+        {% endif %}
+      </select>
+      <div id="table-select-block"></div>
+      <div class="form-group text-center">
+        <input type="submit" value="Delete(삭제)" class="btn btn-primary" />
+      </div>
+    </form>
+    <div class="alert alert-info">
+      <span id="">우선 삭제할 테이블에 속한 데이터베이스를 선택해주세요.</span>
+    </div>
+    <div class="alert alert-danger" id="alert-block" style="display: none;">
+      <span id="alert-msg"></span>
+    </div>
+  </div>
+  <script>
+    $(function(){
+      const table_list = {{t_list|safe}};
+      console.log(table_list);
+
+      document.getElementsByName('db')[0].onchange = (e) => {
+        if(document.getElementsByName('db')[0].value === ''){
+          return false;
+        }
+
+        console.log(table_list[document.getElementsByName('db')[0].value].lenght);
+        let tables = "";
+
+        table_list[document.getElementsByName('db')[0].value].forEach(element => {
+          console.log(element);
+          console.log(Object.keys(element).length);
+          for(let i=0; i < Object.keys(element).length; i++){
+            tables += '<option value="'+element[i]+'">'+ element[i] +'</option>';
+          }
+        });
+
+        console.log(tables);
+
+        document.getElementById('table-select-block').innerHTML = '<select class="form-control mb-2 mt-3" name="tables">'
+                                                                  +  '<option value="">삭제할 테이블을 선택해주세요.</option>'
+                                                                  +  tables
+                                                                + '</select>'
+      }
+
+
+      document.getElementById('create-table-form').onsubmit = (e) => {
+        e.preventDefault();
+        document.getElementById('alert-msg').innerHTML = '';
+          document.getElementById('alert-block').style.display = 'none';
+        if(document.getElementsByName('db')[0].value === ''){
+          document.getElementById('alert-msg').innerHTML = '데이터베이스를 선택해주세요.';
+          document.getElementById('alert-block').style.display = 'block';
+          return false;
+        }
+
+        if(document.getElementsByName('tables')[0].value === ''){
+          document.getElementById('alert-msg').innerHTML = '삭제할 테이블을 선택해주세요.';
+          document.getElementById('alert-block').style.display = 'block';
+          return false;
+        }
+
+        document.getElementById('create-table-form').submit();
+      }
+    });
+  </script>
+{% endblock %}
