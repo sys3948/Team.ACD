@@ -47,8 +47,9 @@
         const user_pw = document.getElementById('user-pw').value;
         const user_confirm_pw = document.getElementById('user-confirm-pw').value;
         const user_email = document.getElementById('user-email').value;
+        const pattern_spc = /[~!@#$%^&*()_+|<>?:{}]/;
 
-        if(user_id === ''){
+        if(user_id === '' || pattern_spc.test(user_id)){
           document.getElementById('id-msg').style.display = 'block';
           document.getElementById('id-msg').innerHTML = '아이디를 입력하지 않았습니다. 아이디를 입력해주세요.'
           document.getElementById('id-msg').style.color = 'red';
@@ -66,9 +67,9 @@
           document.getElementById('pw-msg').style.display = 'none';
         }        
 
-        if(user_pw !== user_confirm_pw){
+        if(user_pw !== user_confirm_pw || pattern_spc.test(user_pw) || pattern_spc.test(user_confirm_pw)){
           document.getElementById('pw-msg').style.display = 'block';
-          document.getElementById('pw-msg').innerHTML = '비밀번호 또는 비밀번호 확인란이 동일하지 않습니다. 입력을 해주세요.';
+          document.getElementById('pw-msg').innerHTML = '비밀번호 또는 비밀번호 확인란이 동일하지 않거나 비밀번호 또는 비밀번호 확인란에 특수부호가 들어가있습니다. 비밀번호는 문자와 숫자 조합으로만 가능합니다. 다시 입력을 해주세요.';
           document.getElementById('pw-msg').style.color = 'red';
           return false;
         }

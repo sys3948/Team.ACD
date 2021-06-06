@@ -845,6 +845,8 @@ def execute_query_no_major_select(id):
                 client = Mongo('mongodb://%s:%s@%s:%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2]))
                 db = client[request.form.get('db')]
 
+                print(request.form.get('data'))
+
                 if request.form.get('data') != "":
                     select_data = request.form.get('data').split(',')
                     # print(next(data) for data in insert_data)
@@ -857,12 +859,20 @@ def execute_query_no_major_select(id):
                                 select_dict[data.split(':')[0]] = float(data.split(':')[1])
                         else:
                             select_dict[data.split(':')[0]] = data.split(':')[1]
+                    print(select_dict)
                     result = db[request.form.get('tables')].find(select_dict)
+
                 else:
                     result = db[request.form.get('tables')].find()
+                print(result)
+                explain = result.explain()['queryPlanner']
                 client.close()
-                print([r for r in result])
-                return jsonify({'confirm' : True, 'result':result})
+                result_json = ""
+                for r in result:
+                    r['_id'] = str(r.get('_id'))
+                    result_json += str(r) + "|"
+                print(result_json)
+                return jsonify({'confirm' : True, 'result':result_json, 'explain':explain})
             else:
                 if request.form.get('setting') == 'columns':
                     table_colums_info = []
@@ -940,11 +950,11 @@ def execute_query_no_major_insert(id):
                 for data in insert_data:
                     if data.split(':')[1].isnumeric():
                         if float(data.split(':')[1]).is_integer():
-                            insert_dict[data.split(':')[0]] = int(data.split(':')[1])
+                            insert_dict[data.split(':')[0].strip()] = int(data.split(':')[1].strip())
                         else:
-                            insert_dict[data.split(':')[0]] = float(data.split(':')[1])
+                            insert_dict[data.split(':')[0].strip()] = float(data.split(':')[1].strip())
                     else:
-                        insert_dict[data.split(':')[0]] = data.split(':')[1]
+                        insert_dict[data.split(':')[0].strip()] = data.split(':')[1].strip()
                 db[request.form.get('tables')].insert(insert_dict)
                 client.close()
                 flash(request.form.get('db')+ ' 데이터베이스 ' + request.form.get('tables') + ' Collection의 Data 삽입을 성공했습니다.')
