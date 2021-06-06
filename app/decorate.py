@@ -57,10 +57,7 @@ def connect_db(func):
                              from dbms_info \
                              where db_id = %s', (kwargs.get('id'),))
 
-            if db_info[0] == 'mongo':
-                user_db = Database(dbms=db_info[0],host=db_info[1],port = db_info[2],user = db_info[4],password=db_info[3], database = '')
-            else:
-                user_db = Database(dbms=db_info[0],host=db_info[1],port = db_info[2],user = db_info[4],password=db_info[3],database = db_info[5])
+            user_db = Database(dbms=db_info[0],host=db_info[1],port = db_info[2],user = db_info[4],password=db_info[3],database = db_info[5])
             
             kwargs['dbms_info'] = {'user_db':user_db,'db_info':db_info}
             cur.close()                 
