@@ -59,7 +59,7 @@
 
 $(function(){
     var csv = $("#import-modal").CSV("{{id}}","import");
-    csv.init();
+    //csv.init();
     $("#next").click(function(){
         
         if(!csv.is_selected_table()) return;

@@ -302,27 +302,28 @@ function initSqlEditor(){
 
 }
 //외부 접속시 스키마 클릭
-    
-$(".connect-schema-btn").click(function(){
-        $(this).collapse('hide');
+$(document).on("click",".connect-schema-btn",function(){
+
+  $(this).collapse('hide');
         $.ajax({
             type : "GET",
             url : "/connect_schema/{{id}}/"+$(this).text(),
             success : (response) => {
+              console.log(response.msg)
               //데이터베이스 선택시 에러발생하면
               if(response.error_msg != undefined) use_error_schema_msg(response.error_msg);
               //데이터베이스 선택시 정상선택되면
               else use_schema_msg(response.msg);
             }
         });
-  });
+})
 
 
   function use_schema_msg(msg){
     $("#schema-msg").empty();
     $("#schema-msg").removeClass('alert-danger');
     $("#schema-msg").addClass('alert-info');
-    $("#schema-msg").append(response.msg);
+    $("#schema-msg").append(msg);
 
   }
 
@@ -330,7 +331,7 @@ $(".connect-schema-btn").click(function(){
       $("#schema-msg").empty();
       $("#schema-msg").removeClass('alert-info');
       $("#schema-msg").addClass('alert-danger');
-      $("#schema-msg").append(response.error_msg);
+      $("#schema-msg").append(error_msg);
   }
 
 

@@ -8,7 +8,7 @@
     </thead>
     <tbody>
         
-        {% if not results and sql_type=='SELECT' %}
+        {% if not results and sql_type=='SELECT' or not results and sql_type=='DESC'%}
             <tr>
                 <td colspan="{{columns|length}}">no rows selected</td>
             </tr>

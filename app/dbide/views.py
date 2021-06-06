@@ -6,7 +6,7 @@ from flask import current_app, flash, json, render_template, request, session, u
 from . import dbide
 from .log import Log
 import mysql.connector as mysql
-from ..database import Database
+from ..database import Database,JSONEncoder
 from ..decorate import login_check,connect_db
 
 from datetime import datetime
@@ -213,7 +213,15 @@ def execute_query_result(id,dbms_info):
                 except Exception as e:
                     json['error_schema_msg'] = f'{db_info[5]}를 사용할수 없습니다.<br>{str(e)}'
                 
+            elif sql_type == "DESC":
+                results = []
+                for tp in  user_db.excuteAll(sql):
+                    results.append([str(el) for el in tp])
+                columns = [col[0] for col in user_db.get_cursor().description ]
+                print(results)
 
+                json['results'] = render_template('include/query_result.html',results=results,columns=columns,sql_type=sql_type)
+                
             else:    
                 
                 results=user_db.excute(sql)
@@ -266,18 +274,30 @@ def execute_mongo_query_result(id,dbms_info):
 
     for query in sqlparse.split(query_string):
         query = query.replace(";","")
+
+
         try:
-            #쿼리 결과
-            result,converted_list,explain = user_db.excute_query_mongo_to_pymongo(query)
+            if re.compile('\s*use\s*\w+').match(query): #use db 일때
+                keyword,db_name = query.strip().split(" ")
+                try:
+                    db_info = user_db.reconnect(id,database=db_name.strip())
 
-            if explain: #실행계획 있은 실행, mongodb find()에만 실행계획 있다
-                context['explain'] = explain
-            context['result'] = result
+                    context['schema_msg'] = f"데이터베이스 <b class='text-dark'>{db_info[5]}</b>에 sql질의 실행"
+                except Exception as e:
+                    context['error_schema_msg'] = f'{db_info[5]}를 사용할수 없습니다.<br>{str(e)}'
 
-            msg_list.append(f'{query}<br>쿼리실행 성공') 
+            else:#나머지 쿼리일때
+                #쿼리 결과
+                result,converted_list,explain = user_db.excute_query_mongo_to_pymongo(query)
 
-            #몽고 쿼리 실행성공 로깅
-            log.write_log(id,query,"성공")
+                if explain: #실행계획 있은 실행, mongodb find()에만 실행계획 있다
+                    context['explain'] = explain
+                context['result'] = result
+
+                msg_list.append(f'{query}<br>쿼리실행 성공') 
+
+                #몽고 쿼리 실행성공 로깅
+                log.write_log(id,query,"성공")
                
         except Exception as e:
             error = str(e)
@@ -316,8 +336,10 @@ def ajax_request_tables(id,database,dbms_info):
     user_db = dbms_info.get('user_db')
     context = {}
     try:
-        tables = user_db.excuteAll(f"show tables from {database}")
-        print(tables)
+        if user_db.dbms != "mongo":
+            tables = user_db.excuteAll(f"show tables from {database}")
+        else:
+            tables = [ (tb,) for tb in user_db.mongo_client[database].list_collection_names()]
         context['tables'] = tables
     except Exception as e:
         print(e)
@@ -338,20 +360,16 @@ def connect_schema(id,schema,dbms_info):
     json = {}
     try:
         
-        # tables = user_db.excuteAll(f'show tables from {schema}')
+        db_info = user_db.reconnect(id,database=schema)
         
-        cur = Database()
-        cur.excute('UPDATE dbms_info SET dbms_schema=%s WHERE db_id=%s',(schema,id,))
-        # cur.excute('select * from table_name where id=%s', (id,))
-        cur.commit()
-        cur.close()
-        user_db.close()
+        print(db_info)
+        if user_db.dbms != "oracle":
+            json['msg'] = f"데이터베이스 <b class='text-dark'>{db_info[5]}</b>에 sql질의 실행"
 
-        json['msg'] = f"데이터베이스 <b class='text-dark'>{schema}</b>에 sql질의 실행"
     except Exception as e:
-        print(e)
-        json['error_msg'] = f'{schema}를 사용할수 없습니다.<br>{str(e)}'
+        json['error_msg'] = f'{db_info[5]}를 사용할수 없습니다.<br>{str(e)}'
 
+    print(json)
     
     return jsonify(json)    
 
@@ -492,7 +510,7 @@ def execute_query_no_major(id):
 
     if db_info[0] == 'mongo':
         user_db = Database(dbms = db_info[0], host = db_info[1], port = db_info[2], user = db_info[4], \
-                           password = db_info[3], database = '')
+                           password = db_info[3], database = db_info[5])
     else:
         user_db = Database(dbms = db_info[0], host = db_info[1], port = db_info[2], user = db_info[4], \
                         password = db_info[3], database = db_info[5])

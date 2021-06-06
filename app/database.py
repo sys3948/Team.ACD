@@ -64,7 +64,6 @@ class Database():
         if self.dbms != 'mongo': #rdbms 연결
             self.connect_rdbms(**kargs)
         else: #mongo 연결
-            
             self.connect_mongo(**kargs)
             
 
@@ -91,12 +90,13 @@ class Database():
 
     def connect_mongo(self,**kargs):
         self.mongo_defauls.update(kargs)
-        uri = "mongodb://%s:%s@%s:%s/%s" % (
-                self.mongo_defauls.get('user'),
-                self.mongo_defauls.get('password'),
+        
+        uri = "mongodb://%s:%s@%s:%s" % (
+                urllib.parse.quote_plus(self.mongo_defauls.get('user')),
+                urllib.parse.quote_plus(self.mongo_defauls.get('password')),
                 self.mongo_defauls.get('host'),
                 self.mongo_defauls.get('port'),
-                self.mongo_defauls.get('database'))
+                )
 
         self.mongo_client = MongoClient(uri)
 
@@ -109,8 +109,12 @@ class Database():
         Returns
             dbms_info테이블 조회결과 반환    
         '''
+        if self.dbms != "mongo":
+            self.connect_rdbms(**kargs)
+        else:
+            self.connect_mongo(**kargs)    
 
-        self.connect_rdbms(**kargs)
+
                 
         mysql_conn = Database()
         #update 선택한 데이터베이스
@@ -251,7 +255,7 @@ class Database():
     
     #몽고db 연결 객체 반환
     def get_mongo_client(self):
-        return self.mongo_client.get_default_database()
+        return self.mongo_client[self.mongo_defauls.get('database')]
 
     # def get_client(self):
     #     return self.mongo_client
@@ -273,15 +277,16 @@ class Database():
             databases = self.mongo_client.list_database_names() if db_info[6] == 0 else None
             if databases:
                 tables = {}
+                exclude_collections = ("system.users","system.version","system.sessions","startup_log")
                 for db in databases:
-                    tables[db] = [self.mongo_client[db].list_collection_names()]
+                    tables[db] = [ (tb,) for tb in self.mongo_client[db].list_collection_names() if not tb in exclude_collections]
           
             else:
                 tables = []
                 #uri 지정한 db_name
-                db = self.mongo_client.get_default_database().name
-                tables.append(self.mongo_client[db].list_collection_names()) 
-        
+                db = self.get_mongo_client().name
+                tables = [ (tb,) for tb in self.mongo_client[db].list_collection_names()]
+            
         else:
             databases = [db[0] for db in self.excuteAll('show databases') if db[0] != 'information_schema' ] if db_info[6] == 0 else None
             #외부db 연결시

@@ -12,6 +12,8 @@ from . import auth
 from ..email import send_email
 from ..database import Database
 from ..decorate import login_check
+from pymongo import MongoClient
+
 
 @auth.route('/sign_in', methods=['GET', 'POST'])
 def sign_in():
@@ -339,9 +341,12 @@ def reset_pw(token):
         #oracle dbms 비밀번호 변경
         oracle_db.excute(f"ALTER user {user_id} IDENTIFIED BY {request.form.get('pw')}",())
 
+        
         mysql_db.close()
         maria_db.close()
         oracle_db.close()
+
+        
         
         return redirect(url_for('auth.sign_out'))
         

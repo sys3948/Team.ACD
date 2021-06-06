@@ -18,9 +18,10 @@
         
         var _this = this;
         //데이터베이스 선택 변경되면 
-        $(".database-opt").change(function(){
+        $(document).off("change").on("change",".database-opt",function(){
             _this.request_table($(this).val());
         });
+        
 
         // modal close
         $(this.modal).on('hidden.bs.modal', function (e) {
@@ -42,6 +43,7 @@
             this.show_error("");
             // 외부 접속시 
             if($(this.modal).find(".database-opt").length > 0){
+                console.log("외부접속");
                 this.request_table($(this.modal).find(".database-opt option:selected").val());
             }
         },
