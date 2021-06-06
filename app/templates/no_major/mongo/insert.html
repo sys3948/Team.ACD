@@ -23,6 +23,7 @@
       </div>
       <div class="form-group text-center">
         <input type="submit" value="Insert(삽입)" class="btn btn-primary" />
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#export-modal">Export CSV</button>
       </div>
     </form>
     <div class="alert alert-info">
@@ -32,6 +33,8 @@
       <span id="alert-msg"></span>
     </div>
   </div>
+  <!--export csv-->
+  {% include 'include/export_modal.html' %}
   <script>
     $(function(){
       const table_list = {{t_list|safe}};

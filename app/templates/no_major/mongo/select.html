@@ -24,7 +24,8 @@
         <textarea class="form-control" name="data"></textarea>
       </div>
       <div class="form-group text-center">
-        <input type="submit" value="Delete(삭제)" class="btn btn-primary" />
+        <input type="submit" value="Select(조회)" class="btn btn-primary" />
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#import-modal">Import CSV</button>
       </div>
     </form>
     <div class="alert alert-info">
@@ -47,8 +48,7 @@
       <!--탭 내용-->
       <div class="tab-content">
         <!--쿼리 실행결과-->
-        <div class="tab-pane fade show active" id="query-result" style="overflow:auto;">
-          {% include 'include/query_result.html' %}
+        <div class="tab-pane fade show active container" id="query-result" style="overflow:auto;">
         </div>
         <!--실행계획-->
         <div class="tab-pane fade" id="explain">
@@ -56,6 +56,8 @@
         </div>
       </div>
   </div>
+  <!--import csv-->
+  {% include 'include/import_modal.html' %}
   <script>
     $(function(){
       const table_list = {{t_list|safe}};
@@ -102,13 +104,24 @@
           return false;
         }
 
+        console.log(document.getElementsByName('data')[0].value);
+
         $.ajax({
             type : 'post',
             url : location.pathname,
             data : {'db' : document.getElementsByName('db')[0].value, 'tables' : document.getElementsByName('tables')[0].value, 'data' : document.getElementsByName('data')[0].value},
             success : (response) => {
-                if(response.confirm){}else{
-                    document.getElementById('alert-msg').innerHTML = '에러가 발생했습니다. 해당 에러는 다음과 같습니다. ' + response.msg  + '<br> 작성된 쿼리는 다음과 같습니다. db.'+document.getElementsByName('tables')[0].value+'find({'+ document.getElementsByName('data')[0].value+".});";
+                if(response.confirm){
+                  console.log(response.result);
+                  console.log(response.explain);
+                  let result_query = "";
+                  response.result.split('|').forEach(element => {
+                    result_query += element + '<br>'
+                  });
+                  document.getElementById('query-result').innerHTML = result_query;
+                  document.getElementById('explain').innerHTML = "<pre>"+JSON.stringify(response.explain,null,4)+"</pre>";
+                }else{
+                    document.getElementById('alert-msg').innerHTML = '에러가 발생했습니다. 해당 에러는 다음과 같습니다. ' + response.msg  + '<br> 작성된 쿼리는 다음과 같습니다. db.'+document.getElementsByName('tables')[0].value+'find({'+ document.getElementsByName('data')[0].value+"});";
                     document.getElementById('alert-block').style.display = 'block';
                 }
             }

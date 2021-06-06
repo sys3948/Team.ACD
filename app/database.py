@@ -92,8 +92,8 @@ class Database():
     def connect_mongo(self,**kargs):
         self.mongo_defauls.update(kargs)
         uri = "mongodb://%s:%s@%s:%s/%s" % (
-                self.mongo_defauls.get('user'),
-                self.mongo_defauls.get('password'),
+                urllib.parse.quote_plus(self.mongo_defauls.get('user')),
+                urllib.parse.quote_plus(self.mongo_defauls.get('password')),
                 self.mongo_defauls.get('host'),
                 self.mongo_defauls.get('port'),
                 self.mongo_defauls.get('database'))

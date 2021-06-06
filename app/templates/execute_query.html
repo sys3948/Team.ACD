@@ -322,7 +322,7 @@ $(".connect-schema-btn").click(function(){
     $("#schema-msg").empty();
     $("#schema-msg").removeClass('alert-danger');
     $("#schema-msg").addClass('alert-info');
-    $("#schema-msg").append(response.msg);
+    $("#schema-msg").append(msg);
 
   }
 
@@ -330,7 +330,7 @@ $(".connect-schema-btn").click(function(){
       $("#schema-msg").empty();
       $("#schema-msg").removeClass('alert-info');
       $("#schema-msg").addClass('alert-danger');
-      $("#schema-msg").append(response.error_msg);
+      $("#schema-msg").append(error_msg);
   }
 
 
