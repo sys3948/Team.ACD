@@ -9,6 +9,7 @@ from pymongo import MongoClient
 import pymongo
 import json
 from bson import ObjectId
+import urllib.parse
 
 
 
@@ -66,8 +67,10 @@ class Database():
             )
             self.cur = self.conn.cursor()
         elif dbms == "mongo":
+            username = urllib.parse.quote_plus(kargs.get('user'))
+            password = urllib.parse.quote_plus(kargs.get('password'))
             uri = "mongodb://%s:%s@%s:%s/%s" % (
-                kargs.get('user'),kargs.get('password'),kargs.get('host'),kargs.get('port'),kargs.get('database'))
+                username, password,kargs.get('host'),kargs.get('port'),kargs.get('database'))
                 
             self.mongo_client = MongoClient(uri)
             
@@ -188,6 +191,9 @@ class Database():
     #몽고db 연결 객체 반환
     def get_mongo_client(self):
         return self.mongo_client.get_default_database()
+
+    # def get_client(self):
+    #     return self.mongo_client
 
     def show_databases_and_tables(self,db_info):
         '''

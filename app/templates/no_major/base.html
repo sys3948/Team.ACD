@@ -64,10 +64,14 @@
             <a class="btn btn-primary col-md-12" href="{{ url_for('dbide.execute_query_no_major_create_table', id = id) }}">테이블 생성</a>
           </div>
           <div class="container mb-2">
-            <div class="row">
-              <a class="btn btn-primary col mr-2" href="{{ url_for('dbide.execute_query_no_major_alter_table', id = id) }}">테이블 수정</a>
+            {% if db_info.0 != 'mongo' %}
+              <div class="row">
+                <a class="btn btn-primary col mr-2" href="{{ url_for('dbide.execute_query_no_major_alter_table', id = id) }}">테이블 수정</a>
+                <a class="btn btn-primary col" href="{{ url_for('dbide.execute_query_no_major_drop_table', id = id) }}">테이블 삭제</a>
+              </div>
+            {% else %}
               <a class="btn btn-primary col" href="{{ url_for('dbide.execute_query_no_major_drop_table', id = id) }}">테이블 삭제</a>
-            </div>
+            {% endif %}
           </div>
           {% if db_info.0 !='oracle' %}
           <div class="container mb-2">
@@ -108,26 +112,31 @@
     $(function(){
       const tab_count = document.getElementsByClassName('connect-schema-btn').length;
 
+      const dbms = '{{db_info.0 | safe}}';
+
       for(let i=0; i< tab_count; i++){
         document.getElementsByClassName('connect-schema-btn')[i].onclick =(e) => {
           console.log(e.target.innerText);
           console.log(location.pathname.split('/')[location.pathname.split('/').length - 1]);
 
-          $.ajax({
-            type : 'get',
-            url : '/connect_schema/' + location.pathname.split('/')[location.pathname.split('/').length - 1] + '/' + e.target.innerText,
-            success : (response) => {
-              if('error_msg' in response){
-                console.log(response.error_msg);
-                document.getElementById('schema-msg').classList.remove('alert-info');
-                document.getElementById('schema-msg').classList.add('alert-danger');
-                document.getElementById('schema-msg').innerHTML = response.error_msg;
+          if(dbms !== 'mongo'){
+            $.ajax({
+              type : 'get',
+              url : '/connect_schema/' + location.pathname.split('/')[location.pathname.split('/').length - 1] + '/' + e.target.innerText,
+              success : (response) => {
+                if('error_msg' in response){
+                  console.log(response.error_msg);
+                  document.getElementById('schema-msg').classList.remove('alert-info');
+                  document.getElementById('schema-msg').classList.add('alert-danger');
+                  document.getElementById('schema-msg').innerHTML = response.error_msg;
+                }
+                if('msg' in response){
+                  location.reload();
+                }
               }
-              if('msg' in response){
-                location.reload();
-              }
-            }
-          });
+            });
+          }
+
         }
       }
     })
