@@ -95,11 +95,15 @@ class Database():
         '''
         
         converted_list = []
-        tokens = query.split('.')
+        query += "."
+        tokens = re.compile('[^\d]\.').finditer(query)
         result = None
-        
-        for i,token in enumerate(tokens):
-            print("token: ",token)
+        start = 0
+        for i,matched_obj in enumerate(tokens):
+            end = matched_obj.start()+1 
+            token = query[start:end]
+            start = matched_obj.end()
+
             #print("is_match: ",re.compile("\w+\((.|\n)*\)").match(token))
             if i == 0:
                 if token != 'db':

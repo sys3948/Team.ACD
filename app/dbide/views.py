@@ -191,7 +191,9 @@ def execute_query_result(id,dbms_info):
             sql = sql.replace(';','')
             
             sql_type = sqlparse.parse(sql)[0].tokens[0].value.upper()
-
+            print("sql_type: ",sql_type)
+            
+            
             #select문 경우 실행
             if sql_type == 'SELECT':
 
@@ -202,6 +204,9 @@ def execute_query_result(id,dbms_info):
                 json['explain'] = user_db.show_explain(sql)
                 json['dbms']   = user_db.dbms
                 json['results'] = render_template('include/query_result.html',results=results,columns=columns,sql_type=sql_type)
+
+            elif sql_type == "USE": #type use 일때
+                pass
             else:    
                 
                 results=user_db.excute(sql)
@@ -311,33 +316,6 @@ def ajax_request_tables(id,database,dbms_info):
         context['error'] = str(e)
         
     return jsonify(context)
-
-
-@login_check
-@dbide.route('/pymongo_test/<id>')
-@connect_db
-def pymongo_test(id,dbms_info):
-    user_db = dbms_info.get('user_db')
-    db = user_db.get_mongo_client()
-    # print("="*30,"database_command_list","="*30)
-    # print(dir(db))
-    # print("="*30)
-    # print("="*30,"collection_command_list","="*30)
-    # print(dir(db.zuozhu))
-    # print("="*30)
-
-    
-    
-
-
-    json_obj = json.loads("""[{"name":"poapo"},{"$set":{"age":"29"}}]""")
-    for el in json_obj:
-        print(el)
-    #print("start: ", r.start())
-    #print("end: ",r.end())
-    
-    return "test"
-
 
 
 
