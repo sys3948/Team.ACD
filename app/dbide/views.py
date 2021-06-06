@@ -206,7 +206,19 @@ def execute_query_result(id,dbms_info):
                 json['results'] = render_template('include/query_result.html',results=results,columns=columns,sql_type=sql_type)
 
             elif sql_type == "USE": #type use 일때
-                pass
+
+                if db_info[5] == "oracle": raise Exception("오라클은 use 명령어 지원하지 않습니다.")
+
+                keyword,db_name = sql.strip().split(" ")
+                try:
+                    db_info = user_db.reconnect(id,database=db_name.strip())
+
+                    if user_db.dbms != "oracle":
+                        json['schema_msg'] = f"데이터베이스 <b class='text-dark'>{db_info[5]}</b>에 sql질의 실행"
+                except Exception as e:
+                    json['error_schema_msg'] = f'{db_info[5]}를 사용할수 없습니다.<br>{str(e)}'
+                
+
             else:    
                 
                 results=user_db.excute(sql)
@@ -225,13 +237,14 @@ def execute_query_result(id,dbms_info):
 
             break
         
-        
+
+    print("db_info: ",db_info)    
     databases,tables = user_db.show_databases_and_tables(db_info)   
 
     json['tables']   = render_template('include/table_nav.html',tables=tables,databases=databases,db_info=db_info)
     json['logs']     = render_template('include/logging.html',logs=log.read_logs(id))
     json['msg_list'] = msg_list
-
+    
     user_db.close()
     log.close_db_connect()
     return jsonify(json)

@@ -42,22 +42,41 @@ class Database():
             'database' : 'system'
         }
 
+        #몽고용 설정
+        self.mongo_defauls = {
+            'user' : None,
+            'password' : None,
+            'host' : None,
+            'port' : 27017,
+            'database': None
+        }
+
         #몽고 디비 
         self.mongo_to_pymongo = {
             'get_collection_names' : 'collection_names',
 
         }
-    
+
+        if not self.dbms in ('mysql','maria','oracle','mongo'):
+            raise Exception('dbms가 존재하지 않습니다.')
+
+        if self.dbms != 'mongo': #rdbms 연결
+            self.connect_rdbms(**kargs)
+        else: #mongo 연결
+            
+            self.connect_mongo(**kargs)
+            
+
+        
+    def connect_rdbms(self,**kargs):
+        
         #mysql, mariadb 연결
-        if dbms == 'mysql' or dbms =='maria':
+        if self.dbms == 'mysql' or self.dbms =='maria':
             # self.defaults.pop('password') if dbms == 'mysql' else self.defaults.pop('passwd')
             #kargs 값이 있으면 defaults values 덮어쓰게 된다
             self.defaults.update(kargs)
             self.conn = mysql.connect(**self.defaults)
-            self.cur = self.conn.cursor()    
-
-        #오라클 연결    
-        elif dbms == 'oracle':
+        elif self.dbms == 'oracle':
             #kargs 값이 있으면 oracle_defaults values 덮어쓰게 된다
             self.oracle_defaults.update(kargs)
             self.conn = oracle.connect(
@@ -65,19 +84,47 @@ class Database():
                 self.oracle_defaults.get('password'),
                 self.oracle_defaults.get('host') + ":" + str(self.oracle_defaults.get('port')),
                 encoding='UTF-8'
-            )
-            self.cur = self.conn.cursor()
-        elif dbms == "mongo":
-            uri = "mongodb://%s:%s@%s:%s/%s" % (
-                kargs.get('user'),kargs.get('password'),kargs.get('host'),kargs.get('port'),kargs.get('database'))
+            )    
+
+        self.cur = self.conn.cursor()   
+
+    def connect_mongo(self,**kargs):
+        self.mongo_defauls.update(kargs)
+        uri = "mongodb://%s:%s@%s:%s/%s" % (
+                self.mongo_defauls.get('user'),
+                self.mongo_defauls.get('password'),
+                self.mongo_defauls.get('host'),
+                self.mongo_defauls.get('port'),
+                self.mongo_defauls.get('database'))
+
+        self.mongo_client = MongoClient(uri)
+
+    def reconnect(self,id,**kargs):
+        '''
+        데이터베이스 재연결 및 acd.dbms_info 테이블 dbms_schema컬럼 업데이트
+        Args
+            id : dbms_info테이블 db_id 컴럼값
+            kargs : 데이터베이스 연결정보
+        Returns
+            dbms_info테이블 조회결과 반환    
+        '''
+
+        self.connect_rdbms(**kargs)
                 
-            self.mongo_client = MongoClient(uri)
-            
-        else:
-            raise Exception('dbms가 존재하지 않습니다.')
-        
-        
-        
+        mysql_conn = Database()
+        #update 선택한 데이터베이스
+        mysql_conn.excute("UPDATE dbms_info SET dbms_schema=%s WHERE db_id=%s",(kargs.get('database'),id))
+        mysql_conn.commit()
+                
+        db_info = mysql_conn.excuteOne('select dbms, hostname, port_num, dbms_connect_pw, \
+                             dbms_connect_username, dbms_schema,inner_num \
+                             from dbms_info \
+                             where db_id = %s', (id,))
+        mysql_conn.close()
+
+        return db_info                     
+
+
     
     def excute(self, sql, args=()):
         self.cur.execute(sql,args)
@@ -157,15 +204,14 @@ class Database():
 
         explain = None
         print(result)
+        print("mongo_result_type: ",type(result))
+        print("mongo_result: ", result)
         if type(result) == pymongo.cursor.Cursor: # find() 실행시
             explain = getattr(result,'explain')()
             explain = explain['queryPlanner'] 
             result = JSONEncoder().encode(list(result))
-
-
-        print("mongo_result_type: ",type(result))
-        print("mongo_result: ", result)
-        if type(result) == dict: # result 타입이 dictionary 일때
+        
+        elif type(result) == dict: # result 타입이 dictionary 일때
             result = JSONEncoder().encode([result])
         elif type(result) == str:
             result = [result]

@@ -83,7 +83,7 @@
           <!--<div class="container border" id="edit" contenteditable="true" style="overflow: auto;"></div>-->
           {% if db_info.0 != 'oracle' %}
             <div class="alert alert-info" id="schema-msg">
-                데이터베이스 <b class="text-dark">{{db_info.5}}</b>에 sql질의 실행
+                데이터베이스 <b class="text-dark use-database">{{db_info.5}}</b>에 sql질의 실행
             </div>
           {% endif %}
           <!--sql editor-->
@@ -190,20 +190,30 @@ $("#result").click(function(){
          }
 
       }else{ //RDBMS
+        updateTables(response.tables);
+        
+
         //SELECT문만 실행됨
         if(response.results != undefined){
           
           updateResult(response.results);
-          updateTables(response.tables);
           var exp_results = response.explain;
           if(response.dbms == "mysql" || response.dbms == "maria")
               exp_results = JSON.parse(response.explain);
           
           $("#explain").show_explain(dbms=response.dbms,exp_results=exp_results);
         }else{
+
           $("#query-result").empty();
         }
+
       }
+      
+      //use db_name 정상 처리시
+      if(response.schema_msg != undefined) use_schema_msg(response.schema_msg);
+
+      //use db_name 에러 발생시
+      if(response.error_schema_msg != undefined) use_error_schema_msg(response.error_schema_msg);
 
       //로그 내용 있으면
       if(response.logs != undefined) updateLog(response.logs)
@@ -299,21 +309,29 @@ $(".connect-schema-btn").click(function(){
             type : "GET",
             url : "/connect_schema/{{id}}/"+$(this).text(),
             success : (response) => {
-              $("#schema-msg").empty();
-              if(response.error_msg != undefined){
-                $("#schema-msg").removeClass('alert-info');
-                $("#schema-msg").addClass('alert-danger');
-                $("#schema-msg").append(response.error_msg);
-
-              }else{
-                $("#schema-msg").removeClass('alert-danger');
-                $("#schema-msg").addClass('alert-info');
-                $("#schema-msg").append(response.msg);
-
-              }
+              //데이터베이스 선택시 에러발생하면
+              if(response.error_msg != undefined) use_error_schema_msg(response.error_msg);
+              //데이터베이스 선택시 정상선택되면
+              else use_schema_msg(response.msg);
             }
         });
   });
+
+
+  function use_schema_msg(msg){
+    $("#schema-msg").empty();
+    $("#schema-msg").removeClass('alert-danger');
+    $("#schema-msg").addClass('alert-info');
+    $("#schema-msg").append(response.msg);
+
+  }
+
+  function use_error_schema_msg(msg){
+      $("#schema-msg").empty();
+      $("#schema-msg").removeClass('alert-info');
+      $("#schema-msg").addClass('alert-danger');
+      $("#schema-msg").append(response.error_msg);
+  }
 
 
 function initAutoComplete() {
