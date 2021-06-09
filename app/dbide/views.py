@@ -292,6 +292,7 @@ def execute_mongo_query_result(id,dbms_info):
 
                 if explain: #실행계획 있은 실행, mongodb find()에만 실행계획 있다
                     context['explain'] = explain
+                print("dbide: ",result)    
                 context['result'] = result
 
                 msg_list.append(f'{query}<br>쿼리실행 성공') 
@@ -728,14 +729,14 @@ def execute_query_no_major_alter_table(id):
                             from col \
                             where tname = '" + request.form.get('table_name').upper() +"'\
                         ) column_info\
-                        inner join ( \
+                        left outer join ( \
                             select a.table_name, a.constraint_type, b.column_name \
                             from all_constraints a join all_cons_columns b \
                             on a.constraint_name = b.constraint_name \
-                            where a.table_name = '" +request.form.get('table_name').upper()+ "'\
+                            where a.table_name = '" +request.form.get('table_name').upper()+ "' and a.constraint_type !='C'\
                         ) column_constraints_info \
                         on column_info.cname = column_constraints_info.column_name"
-                    )
+                        )
                 user_db.close()
                 table_info = [list(i) for i in table_info]
                 return jsonify({'confirm' : True, 'table_info' : str(table_info), 'dbms':db_info[0]})
@@ -902,7 +903,7 @@ def execute_query_no_major_select(id):
             return jsonify({'confirm' : False, 'msg' : str(e)})
 
     databases, tables = user_db.show_databases_and_tables(db_info)
-
+    
     templates = '/no_major/select.html'
 
     if db_info[0] == 'oracle':
@@ -985,7 +986,7 @@ def execute_query_no_major_insert(id):
             return jsonify({'confirm':False, 'msg':str(e)})
 
     databases, tables = user_db.show_databases_and_tables(db_info)
-
+    
     templates = '/no_major/insert.html'
     if db_info[0] == 'oracle':
         t_list = user_db.excuteAll('select tname from tab')

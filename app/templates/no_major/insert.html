@@ -38,7 +38,7 @@
           </div>
           <div class="container text-right">
             <input type="submit" class="btn btn-primary" id="insert-submit" value="Insert(Data 삽입)" />
-            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#export-modal">Export CSV</button>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#import-modal">Import CSV</button>
           </div>
         </div>
       </form>
@@ -64,7 +64,7 @@
     </div>
   </div>
   <!--export csv-->
-  {% include 'include/export_modal.html' %}
+  {% include 'include/import_modal.html' %}
   <script>
     $(function(){
 

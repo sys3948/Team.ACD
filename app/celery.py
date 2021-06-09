@@ -28,7 +28,7 @@ def async_import_csv(self,db_info,csv_file_name,table_name,database_name):
             rdr = csv.reader(f)
 
             header = next(rdr)
-
+            
             if db_info[0] != "mongo":
                 columns = ','.join(header)
                 if db_info[0] == 'oracle':
