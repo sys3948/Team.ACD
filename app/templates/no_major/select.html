@@ -123,7 +123,7 @@
       </div>
       <div class="container text-right mt-2 mb-3">
         <input type="submit" class="btn btn-primary" value="Select(조회)" />
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#import-modal">Import CSV</button>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#export-modal">Export CSV</button>
       </div>
     </form>
   </div>
@@ -168,8 +168,8 @@
       </div>
     </div>
   </div>
-  <!--import csv-->
-  {% include 'include/import_modal.html' %}
+  <!--export csv-->
+  {% include 'include/export_modal.html' %}
   <script src="{{ url_for('static', filename='js/explain.js') }}"></script>
   <script>
     let table_info = {{ t_list | safe }};

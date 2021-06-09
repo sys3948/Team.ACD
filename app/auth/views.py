@@ -344,10 +344,10 @@ def reset_pw(token):
         oracle_db.excute(f"ALTER user {user_id} IDENTIFIED BY {request.form.get('pw')}",())
 
         #mongo 비밀번호 변경
-        uri = "mongodb://127.0.0.1:27017"
-        mongo_client = MongoClient(uri)
-        db = mongo_client['admin']
-        db.command("updateUser", f"{user_id}", pwd=request.form.get('pw'))
+        # uri = "mongodb://192.168.111.133:27017"
+        # mongo_client = MongoClient(uri)
+        # db = mongo_client['admin']
+        # db.command("updateUser", f"{user_id}", pwd=request.form.get('pw'))
         
         mysql_db.close()
         maria_db.close()
