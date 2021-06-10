@@ -68,7 +68,8 @@ def connect_edit_dbms(id=None):
             cur = Database(host = host, user = user_id, password = user_pw, port = port, database = schema, dbms = dbms)
 
             if dbms == 'mongo':
-                cur.list_database_names()
+                #cur.list_database_names()
+                cur.mongo_client.list_database_names()
 
             cur.close()
             dbms_info_cur = Database()
