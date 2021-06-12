@@ -96,8 +96,8 @@ def sign_up():
         oracle_cur = oracle_conn.cursor()
         oracle_cur.execute('create user ' + request.form.get('user_id') + ' identified by ' + request.form.get('user_pw'))
         oracle_cur.execute('grant create session, create table, create view, create sequence to ' + request.form.get('user_id'))
-        oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile '/ora/" + request.form.get('user_id') + ".dbf' size 10m")
-        # oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile 'C:/oraclexe/app/oracle/oradata/XE/" + request.form.get('user_id') + ".dbf' size 10m")
+        # oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile '/ora/" + request.form.get('user_id') + ".dbf' size 10m")
+        oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile 'C:/oraclexe/app/oracle/oradata/XE/" + request.form.get('user_id') + ".dbf' size 10m")
         oracle_cur.execute('alter user ' + request.form.get('user_id') + ' default tablespace ' + request.form.get('user_id'))
         oracle_cur.execute('alter user ' + request.form.get('user_id') + ' quota unlimited on ' + request.form.get('user_id'))
 
@@ -112,7 +112,7 @@ def sign_up():
         user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
                                                 dbms_connect_pw, dbms_connect_username, \
                                                 dbms_schema) \
-                          value(%s, "mysql", "192.168.111.133", "3306", "mysql", %s, %s, %s)', \
+                          value(%s, "mysql", "127.0.0.1", "3306", "mysql", %s, %s, %s)', \
                           (
                            token_id[0],
                            request.form.get('user_pw'), \
@@ -124,7 +124,7 @@ def sign_up():
         user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
                                                 dbms_connect_pw, dbms_connect_username, \
                                                 dbms_schema) \
-                          value(%s, "maria", "192.168.111.133", "3307", "maria", %s, %s, %s)', \
+                          value(%s, "maria", "127.0.0.1", "3307", "maria", %s, %s, %s)', \
                           (
                            token_id[0],
                            request.form.get('user_pw'), \
@@ -136,7 +136,7 @@ def sign_up():
         user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
                                                 dbms_connect_pw, dbms_connect_username, \
                                                 dbms_schema) \
-                          value(%s, "oracle", "192.168.111.133", "1521", "oracle", %s, %s, %s)', \
+                          value(%s, "oracle", "127.0.0.1", "1521", "oracle", %s, %s, %s)', \
                           (
                            token_id[0],
                            request.form.get('user_pw'), \

@@ -1,6 +1,6 @@
 import re
 from typing import KeysView
-from flask import current_app
+from flask import current_app,request
 from flask.helpers import get_template_attribute
 from flask.json import jsonify
 import mysql.connector as mysql
@@ -10,6 +10,7 @@ import pymongo
 import json
 from bson import ObjectId
 import urllib.parse
+
 
 
 
@@ -157,18 +158,26 @@ class Database():
             start = matched_obj.end()
 
             #print("is_match: ",re.compile("\w+\((.|\n)*\)").match(token))
-            if i == 0:
+            print("token: ",token)
+            if re.compile("\s*show\s*users").match(token): #선택 된 db사용자 리스트 
+                result = self.get_mongo_client().command("usersInfo")
+            elif re.compile("\s*show\s*collections").match(token): #선택된 db collection list
+                result = self.get_mongo_client().list_collection_names()
+                
+            elif re.compile("\s*show\s*dbs").match(token): # 전체 데이터베이스 목록
+                result = self.mongo_client.list_database_names()
+                print("show dbs: ", result)
+                
+            elif i == 0:
                 if token != 'db':
                     raise Exception(f'{token} is not defined')
                 result = self.get_mongo_client()
             
             #함수면 실행
             elif re.compile("\w+\((.|\n)*\)").match(token):
-                print("hihihihihi")
+                
                 #함수명, 함수argument로 split
                 func_name,args = token.split('(')
-                
-
                 #함수명 리스트로 변환 
                 new_func_name = list(func_name)
                 
@@ -225,7 +234,7 @@ class Database():
         
         elif type(result) == pymongo.collection.Collection:
             result = JSONEncoder().encode([{"collection_name":result.name}])
-        else:
+        elif not result:
             result = None
         
         
@@ -278,8 +287,12 @@ class Database():
             if databases:
                 tables = {}
                 exclude_collections = ("system.users","system.version","system.sessions","startup_log")
+
                 for db in databases:
-                    tables[db] = [ (tb,) for tb in self.mongo_client[db].list_collection_names() if not tb in exclude_collections]
+                    if "execute_query_no_major" in request.path:
+                        tables[db] = [self.mongo_client[db].list_collection_names()]
+                    else:    
+                        tables[db] = [ (tb,) for tb in self.mongo_client[db].list_collection_names() if not tb in exclude_collections]
           
             else:
                 tables = []
@@ -296,7 +309,7 @@ class Database():
                     tables[db] = self.excuteAll(f'show tables from {db}')
             else:
                 tables = self.excuteAll('show tables')
-
+        print(tables)
         return databases,tables  
     
     

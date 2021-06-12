@@ -23,6 +23,7 @@
            oracle_explain(this,exp_results);
 
         }else{
+            
             mysql_explain(this,exp_results,0);
         }
             
@@ -61,6 +62,7 @@
     function mysql_explain(element,json,depth){
   
         Object.keys(json).forEach(function(key){
+            
       
             if("nested_loop" == key){
                 for(var i=0; i<json[key].length-1 ; i++){
@@ -76,17 +78,20 @@
                 }
                 
 
-            }else if("grouping_operation" == key){
+            }else if("grouping_operation" == key || "ordering_operation" == key){
               
               make_ul(
                       element=element,
                       name=key,
                       depth=depth,
                       access_type=null,
-                      cost=0
+                      cost=null
                     );
-      
-            }else if(/^.+_subqueries$/.test(key)){
+              
+              mysql_explain(element,json[key],depth+1);
+            }
+            
+            else if(/^.+_subqueries$/.test(key)){
               
               make_ul(
                       element=element,
@@ -155,8 +160,9 @@
         console.log("cost: "+cost);
         
         access_type = (access_type == null) ? "" : access_type;
+      
         //cost = (name == "query_block") ? "query_cost:"+cost : "cost:"+cost;
-        cost =  "Cost: "+cost;
+        cost =  (cost == null)? "" : "Cost: "+cost;
         
         var ul = "";
         ul += "<ul id='depth-"+depth+"'>";

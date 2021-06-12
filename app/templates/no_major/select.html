@@ -123,6 +123,7 @@
       </div>
       <div class="container text-right mt-2 mb-3">
         <input type="submit" class="btn btn-primary" value="Select(조회)" />
+        <button type="button" class="btn btn-primary" id="show-query">쿼리 미리보기</button>
         <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#export-modal">Export CSV</button>
       </div>
     </form>
@@ -959,6 +960,13 @@
 
       document.getElementById('info-block-close').onclick = (e) => {
         document.getElementById('alert-info-block').style.display = 'none';
+      }
+
+
+      document.getElementById('show-query').onclick = (e) => {
+        const select_query = write_select_query();
+        document.getElementById('alert-info-block').style.display = 'block';
+        document.getElementById('info-msg').innerHTML = select_query;
       }
 
 
