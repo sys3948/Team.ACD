@@ -220,6 +220,7 @@ class Database():
         print(result)
         print("mongo_result_type: ",type(result))
         print("mongo_result: ", result)
+        
         if type(result) == pymongo.cursor.Cursor: # find() 실행시
             explain = getattr(result,'explain')()
             explain = explain['queryPlanner'] 
@@ -234,7 +235,7 @@ class Database():
         
         elif type(result) == pymongo.collection.Collection:
             result = JSONEncoder().encode([{"collection_name":result.name}])
-        elif not result:
+        elif type(result) != list:
             result = None
         
         
