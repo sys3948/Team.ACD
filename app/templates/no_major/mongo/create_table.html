@@ -32,6 +32,8 @@
           {% for db in databases %}
             <option value="{{db}}">{{db}}</option>
           {% endfor %}
+        {% else %}
+          <option value="{{dbms_schema}}">{{dbms_schema}}</option>
         {% endif %}
       </select>
       <div class="form-group mb-2 mt-3">

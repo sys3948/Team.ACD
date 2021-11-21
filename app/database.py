@@ -91,13 +91,24 @@ class Database():
 
     def connect_mongo(self,**kargs):
         self.mongo_defauls.update(kargs)
-        
-        uri = "mongodb://%s:%s@%s:%s" % (
-                urllib.parse.quote_plus(self.mongo_defauls.get('user')),
-                urllib.parse.quote_plus(self.mongo_defauls.get('password')),
-                self.mongo_defauls.get('host'),
-                self.mongo_defauls.get('port'),
-                )
+
+        if self.mongo_defauls.get('database') is None:
+            uri = "mongodb://%s:%s@%s:%s" % (
+                    urllib.parse.quote_plus(self.mongo_defauls.get('user')),
+                    urllib.parse.quote_plus(self.mongo_defauls.get('password')),
+                    self.mongo_defauls.get('host'),
+                    self.mongo_defauls.get('port'),
+                    )
+        else:
+            uri = "mongodb://%s:%s@%s:%s/%s" % (
+                    urllib.parse.quote_plus(self.mongo_defauls.get('user')),
+                    urllib.parse.quote_plus(self.mongo_defauls.get('password')),
+                    self.mongo_defauls.get('host'),
+                    self.mongo_defauls.get('port'),
+                    self.mongo_defauls.get('database'),
+                    )
+
+        print(uri)
 
         self.mongo_client = MongoClient(uri)
 
@@ -285,6 +296,7 @@ class Database():
         elif self.dbms == 'mongo':
             #외부 접속시만 database list 가져오기
             databases = self.mongo_client.list_database_names() if db_info[6] == 0 else None
+            # print("DataBase List : ", databases)
             if databases:
                 tables = {}
                 exclude_collections = ("system.users","system.version","system.sessions","startup_log")
@@ -310,7 +322,6 @@ class Database():
                     tables[db] = self.excuteAll(f'show tables from {db}')
             else:
                 tables = self.excuteAll('show tables')
-        print(tables)
         return databases,tables  
     
     

@@ -59,6 +59,8 @@ def sign_up():
         if user_cur.fetchone():
             return jsonify({'confirm':False, 'target':'email', 'msg':'이미 존재하는 Email 입니다.'})
 
+        # mysql user info insert
+
         user_cur.execute('insert into user(user_id, password_hash, email, stampdate) \
                           value(%s, %s, %s, %s)', \
                           (request.form.get('user_id'), \
@@ -68,12 +70,22 @@ def sign_up():
                           )\
                         )
 
+        # mysql create user
+
+        print("create mysql user & db")
+
         user_cur.execute('create database %s' %(request.form.get('user_id')))
         user_cur.execute('create user %s@"%" identified by %s', \
                          (request.form.get('user_id'), request.form.get('user_pw')))
         user_cur.execute('grant all privileges on %s.* to %s@"%%"' \
                          %(request.form.get('user_id'), request.form.get('user_id')))
         user_conn.commit()
+
+        print("create mysql user & db finish")
+
+        # mariadb create user
+
+        print("create mariadb user & db")
 
         maria_conn = mysql.connect(user=current_app.config.get('MYSQL_USER'), \
                                      password=current_app.config.get('MYSQL_PW'), \
@@ -90,14 +102,20 @@ def sign_up():
         maria_cur.close()
         maria_conn.close()
 
+        print("create mariadb user & db finish")
+
+        # oracle create user
+
+        print("create oracle user & db")
+
         oracle_conn = oracle.connect(current_app.config.get('ORACLE_USER'), \
                                      current_app.config.get('ORACLE_PW'), \
                                      current_app.config.get('DB_HOST') + ':' + current_app.config.get('ORACLE_PORT'))
         oracle_cur = oracle_conn.cursor()
         oracle_cur.execute('create user ' + request.form.get('user_id') + ' identified by ' + request.form.get('user_pw'))
         oracle_cur.execute('grant create session, create table, create view, create sequence to ' + request.form.get('user_id'))
-        # oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile '/ora/" + request.form.get('user_id') + ".dbf' size 10m")
-        oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile 'C:/oraclexe/app/oracle/oradata/XE/" + request.form.get('user_id') + ".dbf' size 10m")
+        oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile '/ora/" + request.form.get('user_id') + ".dbf' size 10m")
+        # oracle_cur.execute("create tablespace " + request.form.get('user_id') + " datafile 'C:/oraclexe/app/oracle/oradata/XE/" + request.form.get('user_id') + ".dbf' size 10m")
         oracle_cur.execute('alter user ' + request.form.get('user_id') + ' default tablespace ' + request.form.get('user_id'))
         oracle_cur.execute('alter user ' + request.form.get('user_id') + ' quota unlimited on ' + request.form.get('user_id'))
 
@@ -105,6 +123,24 @@ def sign_up():
         oracle_cur.close()
         oracle_conn.close()
 
+        print("create oracle user & db finish")
+
+        # mongodb create user
+
+        print("create mongo user & db")
+
+        user = urllib.parse.quote_plus(current_app.config.get('MYSQL_USER'))
+        pwd = urllib.parse.quote_plus(current_app.config.get('MYSQL_PW'))
+        client = MongoClient('mongodb://%s:%s@%s:27017' %(user, pwd, current_app.config.get('DB_HOST')))
+        db = client[request.form.get('user_id')]
+        db.test.insert({"id":0})
+        db.command("createUser", request.form.get('user_id'), pwd=request.form.get('user_pw'), roles=['readWrite'])
+        client.close()
+
+        print("create mongo user & db finish")
+
+
+        print("insert dbms_info")
 
         user_cur.execute('select id from user where user_id = %s',(request.form.get('user_id'),))
         token_id = user_cur.fetchone()
@@ -112,9 +148,10 @@ def sign_up():
         user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
                                                 dbms_connect_pw, dbms_connect_username, \
                                                 dbms_schema) \
-                          value(%s, "mysql", "127.0.0.1", "3306", "mysql", %s, %s, %s)', \
+                          value(%s, "mysql", %s, "3306", "mysql", %s, %s, %s)', \
                           (
                            token_id[0],
+                           current_app.config.get('DB_HOST'),
                            request.form.get('user_pw'), \
                            request.form.get('user_id'), \
                            request.form.get('user_id') \
@@ -124,9 +161,10 @@ def sign_up():
         user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
                                                 dbms_connect_pw, dbms_connect_username, \
                                                 dbms_schema) \
-                          value(%s, "maria", "127.0.0.1", "3307", "maria", %s, %s, %s)', \
+                          value(%s, "maria", %s, "3307", "maria", %s, %s, %s)', \
                           (
                            token_id[0],
+                           current_app.config.get('DB_HOST'),
                            request.form.get('user_pw'), \
                            request.form.get('user_id'), \
                            request.form.get('user_id') \
@@ -136,13 +174,27 @@ def sign_up():
         user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
                                                 dbms_connect_pw, dbms_connect_username, \
                                                 dbms_schema) \
-                          value(%s, "oracle", "127.0.0.1", "1521", "oracle", %s, %s, %s)', \
+                          value(%s, "oracle", %s, "1521", "oracle", %s, %s, %s)', \
                           (
                            token_id[0],
+                           current_app.config.get('DB_HOST'),
                            request.form.get('user_pw'), \
                            request.form.get('user_id'), \
                            request.form.get('user_id') \
                           )\
+                        )
+
+        user_cur.execute('insert into dbms_info(user_id, dbms, hostname, port_num, alias, \
+                                                dbms_connect_pw, dbms_connect_username, \
+                                                dbms_schema) \
+                         value(%s, "mongo", %s, "27017", "mongo", %s, %s, %s)', \
+                         (
+                           token_id[0],
+                           current_app.config.get('DB_HOST'), \
+                           request.form.get('user_pw'), \
+                           request.form.get('user_id'), \
+                           request.form.get('user_id') \
+                         ) \
                         )
 
 
@@ -150,6 +202,8 @@ def sign_up():
 
         user_cur.close()
         user_conn.close()
+
+        print("insert dbms_info finish")
 
 
         s = Serializer(current_app.config.get('SECRET_KEY'), 3600)

@@ -17,7 +17,9 @@ import os
 import io
 from werkzeug.utils import secure_filename
 from pymongo import MongoClient as Mongo
+from pymongo import errors as MongoErrors
 import urllib.parse
+import cx_Oracle
 from app import database
 
 
@@ -96,9 +98,15 @@ def connect_edit_dbms(id=None):
             return jsonify({'confirm':True})
         except mysql.Error as e:
             print(e)
-            dbms_info_cur.close()
-            cur.close()
             return jsonify({"confirm":False, "msg":str(e)})
+
+        except cx_Oracle.DatabaseError as e:
+            print(e)
+            return jsonify({"confirm":False, "msg":str(e)})
+        except MongoErrors.PyMongoError as e:
+            print(e)
+            return jsonify({"confirm" : False, "msg" : str(e)})
+
 
     dbms_info = None
 
@@ -544,7 +552,7 @@ def execute_query_no_major_create_db(id):
         try:
 
             if db_info[0] == 'mongo':
-                client = Mongo('mongodb://%s:%s@%s:%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2]))
+                client = Mongo('mongodb://%s:%s@%s:%s/%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2], db_info[5]))
                 db = client[request.form.get('db')]
                 db.test_col.insert({"id":0})
             else:
@@ -600,7 +608,7 @@ def execute_query_no_major_drop_db(id):
     if request.method == 'POST':
         try:
             if db_info[0] == 'mongo':
-                client = Mongo('mongodb://%s:%s@%s:%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2]))
+                client = Mongo('mongodb://%s:%s@%s:%s/%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2], db_info[5]))
                 db = client.drop_database(request.form.get('drop_info'))
             else:
                 cur = Database(dbms=db_info[0], host = db_info[1], port = db_info[2], user=db_info[4], \
@@ -631,7 +639,7 @@ def execute_query_no_major_drop_db(id):
     if db_info[0] == 'mysql' or db_info[0] == 'maria':
         d_list = user_db.excuteAll('show databases')
     if db_info[0] == 'mongo':
-        client = Mongo('mongodb://%s:%s@%s:%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2]))
+        client = Mongo('mongodb://%s:%s@%s:%s/%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2], db_info[5]))
         d_list = client.list_database_names()
 
     user_db.close()
@@ -664,8 +672,11 @@ def execute_query_no_major_create_table(id):
     if request.method == 'POST':
         try:
             if db_info[0] == 'mongo':
-                client = Mongo('mongodb://%s:%s@%s:%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2]))
-                db = client[request.form.get('db')]
+                client = Mongo('mongodb://%s:%s@%s:%s/%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2], db_info[5]))
+                if db_info[6] == 1 and request.form.get('db') is None:
+                    db = client[db_info[5]]
+                else:
+                    db = client[request.form.get('db')]
                 db[request.form.get('tables')].insert({'id':0})
                 flash('Table 생성을 성공했습니다.')
                 client.close()
@@ -682,7 +693,11 @@ def execute_query_no_major_create_table(id):
 
     databases, tables = user_db.show_databases_and_tables(db_info)
     user_db.close()
-    print(tables)
+    print("TB :: ",tables)
+    print("DB :: ", databases)
+
+    # if databases is None:
+    #     databases = [db_info[5]]
 
     if db_info[0] == 'mongo':
         templates = '/no_major/mongo/create_table.html'
@@ -790,7 +805,7 @@ def execute_query_no_major_drop_table(id):
 
     if request.method == 'POST':
         if db_info[0] == 'mongo':
-            client = Mongo('mongodb://%s:%s@%s:%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2]))
+            client = Mongo('mongodb://%s:%s@%s:%s/%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2], db_info[5]))
             db = client[request.form.get('db')]
             db[request.form.get('tables')].drop()
             client.close()
@@ -813,8 +828,14 @@ def execute_query_no_major_drop_table(id):
     if db_info[0] == 'mysql' or db_info[0] == 'maria':
         t_list = user_db.excuteAll(f'show tables from {db_info[5]}')
     if db_info[0] == 'mongo':
-        t_list = tables
+        if db_info[6] == 1:
+            t_list = {db_info[5] : [list(t) for t in tables]}
+        else:
+            t_list = tables
     user_db.close()
+
+    print("TB list :: ", t_list)
+    print("DB inner num :: ", db_info[6])
 
     if db_info[0] == 'mongo':
         templates = '/no_major/mongo/drop_table.html'
@@ -844,10 +865,10 @@ def execute_query_no_major_select(id):
     if request.method == 'POST':
         try :
             if db_info[0] == 'mongo':
-                client = Mongo('mongodb://%s:%s@%s:%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2]))
+                client = Mongo('mongodb://%s:%s@%s:%s/%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2], db_info[5]))
                 db = client[request.form.get('db')]
 
-                print(request.form.get('data'))
+                print("Data :: " + request.form.get('data'))
 
                 if request.form.get('data') != "":
                     select_data = request.form.get('data').split(',')
@@ -911,11 +932,15 @@ def execute_query_no_major_select(id):
         t_list = user_db.excuteAll('select tname from tab')
         t_list = [i[0] for i in t_list]
     if db_info[0] == 'mysql' or db_info[0] == 'maria':
+        print(db_info[5])
         t_list = user_db.excuteAll(f'show tables from {db_info[5]}')
         t_list = [i[0] for i in t_list]
     if db_info[0] == 'mongo':
         templates = '/no_major/mongo/select.html'
-        t_list = tables
+        if db_info[6] == 1:
+            t_list = {db_info[5] : [list(t) for t in tables]}
+        else:
+            t_list = tables
 
     user_db.close()
 
@@ -944,7 +969,7 @@ def execute_query_no_major_insert(id):
     if request.method == 'POST':
         try:
             if db_info[0] == 'mongo':
-                client = Mongo('mongodb://%s:%s@%s:%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2]))
+                client = Mongo('mongodb://%s:%s@%s:%s/%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2], db_info[5]))
                 db = client[request.form.get('db')]
                 insert_data = request.form.get('data').split(',')
                 # print(next(data) for data in insert_data)
@@ -994,7 +1019,10 @@ def execute_query_no_major_insert(id):
     if db_info[0] == 'mysql' or db_info[0] == 'maria':
         t_list = user_db.excuteAll(f'show tables from {db_info[5]}')
     if db_info[0] == 'mongo':
-        t_list = tables
+        if db_info[6] == 1:
+            t_list = {db_info[5] : [list(t) for t in tables]}
+        else:
+            t_list = tables
         templates = '/no_major/mongo/insert.html'
 
     user_db.close()
@@ -1084,7 +1112,7 @@ def execute_query_no_major_delete(id):
     if request.method == 'POST':
         try:
             if db_info[0] == 'mongo':
-                client = Mongo('mongodb://%s:%s@%s:%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2]))
+                client = Mongo('mongodb://%s:%s@%s:%s/%s' %(urllib.parse.quote_plus(db_info[4]),urllib.parse.quote_plus(db_info[3]), db_info[1], db_info[2], db_info[5]))
                 db = client[request.form.get('db')]
                 insert_data = request.form.get('data').split(',')
                 insert_dict = {}
@@ -1134,8 +1162,11 @@ def execute_query_no_major_delete(id):
     if db_info[0] == 'mysql' or db_info[0] == 'maria':
         t_list = user_db.excuteAll(f'show tables from {db_info[5]}')
     if db_info[0] == 'mongo':
+        if db_info[6] == 1:
+            t_list = {db_info[5] : [list(t) for t in tables]}
+        else:
+            t_list = tables
         templates ='/no_major/mongo/delete.html'
-        t_list = tables
 
     user_db.close()
 
